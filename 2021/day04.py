@@ -37,6 +37,18 @@ def part1(inputs):
             if max_score(grids[i]) == 5:
                 return int(np.sum(np.nan_to_num(grids[i]))) * num
 
+def part2(inputs):
+    nums, grids = parse_input(inputs)
+    for num in nums:
+        for i in range(len(grids)):
+            grids[i] = play_number(grids[i], num)
+        # if more than one grid is left, remove solved grids
+        if len(grids) > 1:
+            grids = [grid for grid in grids if max_score(grid) != 5]
+        else: # if only one grid is left, check if it won and return the score
+            if max_score(grids[0]) == 5:
+                return int(np.sum(np.nan_to_num(grids[0]))) * num
+
 
 test_input = [
     '7,4,9,5,11,17,23,2,0,14,21,24,10,16,13,6,15,25,12,22,18,20,8,19,3,26,1',
@@ -62,7 +74,10 @@ test_input = [
 
 input_raw = read_file('2021/data/day04/input.txt')
 
-print(part1(test_input) == 188 * 24)
+assert (part1(test_input) == 188 * 24)
 
 print(part1(input_raw))
     
+assert (part2(test_input) == 148 * 13)
+
+print(part2(input_raw))
