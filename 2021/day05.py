@@ -24,12 +24,12 @@ def range_between(a, b):
 
 def expand_line(line):
     start, end = line
-
-    results = []
-    for i in range_between(start[0], end[0]):
-        for j in range_between(start[1], end[1]):
-            results.append((i, j))
-    return results
+    dx = end[0] - start[0]
+    dy = end[1] - start[1]
+    stepx = dx / abs(dx) if dx else 0
+    stepy = dy / abs(dy) if dy else 0
+    num_steps = max(abs(dx), abs(dy)) + 1
+    return [(start[0] + stepx * i, start[1] + stepy * i) for i in range(num_steps)]
 
 def flatten(list_of_lists):
     return [item for sublist in list_of_lists for item in sublist]
@@ -41,7 +41,11 @@ def part1(inputs):
     counts = Counter(flatten(expanded))
     return len([ value for _, value in  counts.items() if value > 1])
 
-
+def part2(inputs):
+    lines = parse_input(inputs)
+    expanded = [expand_line(line) for line in lines]
+    counts = Counter(flatten(expanded))
+    return len([ value for _, value in  counts.items() if value > 1])
 
 
 test_input = [
@@ -62,3 +66,7 @@ input_raw = read_file('2021/data/day05/input.txt')
 assert part1(test_input) == 5
 
 print(part1(input_raw))
+
+assert part2(test_input) == 12
+
+print(part2(input_raw))
