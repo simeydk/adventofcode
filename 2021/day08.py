@@ -67,17 +67,17 @@ def solve_signals(signals_list: List[str]):
         # THREE is the only digit with 5 strokes that is a superset of 7
         elif ((signal["len"] == 5) and is_superset(signal, solved[7])):
             assign(signal, 3)
-        # TWO is the only digit with 5 strokes that is a subset of 6
-        elif ((signal["len"] == 5) and is_superset(solved[6], signal)):
-            assign(signal, 2)
     for signal in signals:
         if signal['value'] != None: pass
+        # TWO is the only digit with 5 strokes that is a subset of 6
+        elif ((signal["len"] == 5) and is_superset(solved[6], signal)):
+            assign(signal, 5)
         # ZERO is the only remaining digit with 6 strokes
         elif (signal["len"] == 6) and signal["value"] == None:
             assign(signal, 0)
         # FIVE is the only remaining digit with 5 strokes
         elif (signal["len"] == 5) and signal["value"] == None:
-            assign(signal, 5)
+            assign(signal, 2)
 
     incomplete = [signal for signal in signals if signal['value'] == None]
     if incomplete:
@@ -93,14 +93,13 @@ def solve_line(parsed_line):
     solved  = solve_signals(parsed_line[0])
     mapper = make_mapper(solved)
     result = int(''.join([str(mapper[x]) for x in parsed_line[1]]))
-    print(result)
     return result
 
 
 def part2(lines):
     parsed =  parse_input(lines)
     values = [solve_line(x) for x in parsed]
-    return values
+    return sum(values)
     
 
 test_input = [
@@ -122,4 +121,6 @@ assert part1(test_input) == 26
 
 print(part1(input_raw))
 
-print(part2(test_input))
+assert part2(test_input) == 61229
+
+print(part2(input_raw))
