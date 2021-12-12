@@ -75,7 +75,13 @@ def part1(data: List[str]) -> int:
     return num_flashes
 
 def part2(data: List[str]) -> int:
-    pass
+    mx =  np.array([[c for c in x] for x in data], dtype=np.int8)
+    num_flashes = 0
+    n = 0
+    while num_flashes < 100:
+        n += 1
+        mx, num_flashes = multistep(mx, 1)
+    return n 
 
 test_input = [
     '5483143223',
@@ -93,7 +99,7 @@ test_input = [
 
 DAY = 11
 TEST_SOLUTION_1 = 1656
-TEST_SOLUTION_2 = None
+TEST_SOLUTION_2 = 195
 
 input_raw = read_file(f'2021/data/day{DAY:02d}/input.txt')
 
