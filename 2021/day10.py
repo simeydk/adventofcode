@@ -1,4 +1,5 @@
 from typing import List, Union
+from statistics import median
 
 def read_file(filename):
     with open(filename) as f:
@@ -37,6 +38,24 @@ def part1(data: List[str]):
     points = [POINTS.get(e,0) for e in errors if type(e) == str]
     return sum(points)
 
+AUTOCOMPLETE_POINTS = {
+'(': 1,
+'[': 2,
+'{': 3,
+'<': 4,
+}
+
+def calc_autocomplete_score(missing_stack: List[str]):
+    missing_stack.reverse()
+    score = 0
+    for char in missing_stack:
+        score = score * 5 +  AUTOCOMPLETE_POINTS[char]
+    return score
+
+def part2(data: List[str]):
+    errors = [test_line(line) for line in data]
+    scores = [calc_autocomplete_score(e) for e in errors if type(e) == list]
+    return median(scores)
 
 test_input = [
     R'[({(<(())[]>[[{[]{<()<>>',
@@ -54,4 +73,9 @@ test_input = [
 input_raw = read_file('2021/data/day10/input.txt')
 
 assert (part1(test_input)) == 26397
+
 print(part1(input_raw))
+
+assert (part2(test_input)) == 288957
+
+print(part2(input_raw))
