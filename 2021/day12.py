@@ -9,22 +9,13 @@ class Node:
     connections: Set['Node'] = field(
         default_factory=set, hash=False, repr=False, compare=False)
 
+    def __repr__(self) -> str:
+        return f'{self.value}'
 
 @dataclass(frozen=True)
 class Graph:
     edges: List[Set[Node]]
     nodes: Dict[str, Node]
-
-
-Node.__repr__ = lambda self: self.value
-
-# Graph = NamedTuple("Graph", [
-#     ("edges", List[set]),
-#     ("nodes", Set[Node]),
-#     # ("connections", Dict[str, List[str]])
-# ])
-
-# Graph.find_node = lambda self, value: next(node for node in self.nodes if node.value == value)
 
 
 def read_file(filename):
@@ -68,15 +59,14 @@ def paths_between_with_small_cave(start: Node, end: Node, prefix: List[Node] = [
     if start == end:
         yield prefix
         return
-
+        
     max_prev_lower = get_max_prev_lower(prefix)
+
     for node in start.connections:
-        if (node.value == "start"):
-            pass
-        elif node.value.islower() and node in prefix and max_prev_lower >= 2: 
-            pass
-        else: 
-            yield from paths_between_with_small_cave(node, end, prefix)
+        if (node.value == "start"): continue
+        if node.value.islower() and node in prefix and max_prev_lower >= 2: continue
+         
+        yield from paths_between_with_small_cave(node, end, prefix)
 
 def get_max_prev_lower(prefix):
     prev_lowers = Counter(node for node in prefix if node.value.islower())
@@ -87,7 +77,7 @@ def part2(data: List[str]) -> int:
     return len(part2_paths(data))
 
 
-def part2_paths(data) -> List[List[Node]]:
+def part2_paths(data: List[str]) -> List[List[Node]]:
     graph = parse_input(data)
     start_node = graph.nodes["start"]
     end_node = graph.nodes["end"]
@@ -105,88 +95,19 @@ test_input = [
     'b-end',
 ]
 
-test_input_1 = ['start-end']
-test_input_2 = ['start-A', 'A-end']
-test_input_3 = [
-    'start-A',
-    'start-b',
-    'A-b',
-    'A-end',
-    'b-end',
-]
-
 DAY = 12
 TEST_SOLUTION_1 = 10
-TEST_SOLUTION_2 = None
+TEST_SOLUTION_2 = 36
 
 input_raw = read_file(f'2021/data/day{DAY:02d}/input.txt')
 
-# if TEST_SOLUTION_1:
-#     assert part1(test_input) == TEST_SOLUTION_1
-#     print(f"Solution 1:\n{part1(input_raw)}")
-#     if TEST_SOLUTION_2:
-#         assert part2(test_input) == TEST_SOLUTION_2
-#         print(f"Solution 2:\n{part2(input_raw)}")
-#     else:
-#         print(f"Test 2:\n{part2(test_input)}")
-# else:
-#     print(f"Test 1:\n{part1(test_input)}")
-
-
-def path_to_string(path: List[Node]) -> str:
-    return ",".join(node.value for node in path)
-
-
-def print_paths(paths: List[List[Node]]):
-    for i, path in enumerate(paths):
-        print(f"{i+1:02d} - " + ",".join(node.value for node in path))
-
-
-print_paths(part2_paths(test_input))
-
-part_2_test_input_paths = [
-    'start,A,b,A,b,A,c,A,end',
-    'start,A,b,A,b,A,end',
-    'start,A,b,A,b,end',
-    'start,A,b,A,c,A,b,A,end',
-    'start,A,b,A,c,A,b,end',
-    'start,A,b,A,c,A,c,A,end',
-    'start,A,b,A,c,A,end',
-    'start,A,b,A,end',
-    'start,A,b,d,b,A,c,A,end',
-    'start,A,b,d,b,A,end',
-    'start,A,b,d,b,end',
-    'start,A,b,end',
-    'start,A,c,A,b,A,b,A,end',
-    'start,A,c,A,b,A,b,end',
-    'start,A,c,A,b,A,c,A,end',
-    'start,A,c,A,b,A,end',
-    'start,A,c,A,b,d,b,A,end',
-    'start,A,c,A,b,d,b,end',
-    'start,A,c,A,b,end',
-    'start,A,c,A,c,A,b,A,end',
-    'start,A,c,A,c,A,b,end',
-    'start,A,c,A,c,A,end',
-    'start,A,c,A,end',
-    'start,A,end',
-    'start,b,A,b,A,c,A,end',
-    'start,b,A,b,A,end',
-    'start,b,A,b,end',
-    'start,b,A,c,A,b,A,end',
-    'start,b,A,c,A,b,end',
-    'start,b,A,c,A,c,A,end',
-    'start,b,A,c,A,end',
-    'start,b,A,end',
-    'start,b,d,b,A,c,A,end',
-    'start,b,d,b,A,end',
-    'start,b,d,b,end',
-    'start,b,end',
-]
-
-p2paths = part2_paths(test_input)
-p2paths_str = [path_to_string(path) for path in p2paths]
-print(len(p2paths_str))
-for path in part_2_test_input_paths:
-    if path not in p2paths_str:
-        print(path)
-    # assert path_to_string(p2paths[int(path.split(",")[0])-1]) == path
+if TEST_SOLUTION_1:
+    assert part1(test_input) == TEST_SOLUTION_1
+    print(f"Solution 1:\n{part1(input_raw)}")
+    if TEST_SOLUTION_2:
+        assert part2(test_input) == TEST_SOLUTION_2
+        print(f"Solution 2:\n{part2(input_raw)}")
+    else:
+        print(f"Test 2:\n{part2(test_input)}")
+else:
+    print(f"Test 1:\n{part1(test_input)}")
