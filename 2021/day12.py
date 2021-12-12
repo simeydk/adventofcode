@@ -1,5 +1,6 @@
 from typing import List, Set, Dict
 from dataclasses import dataclass, field
+from collections import Counter
 
 
 @dataclass(frozen=True)
@@ -62,32 +63,25 @@ def part1(data: List[str]):
     return len(list(paths_between(start_node, end_node)))
 
 
-def paths_between_with_small_cave(start: Node, end: Node, visited: Set[Node] = None, small_cave_available: bool = True) -> List[List[str]]:
-    
-    print(f"{start.value} - {end.value}")
-
+def paths_between_with_small_cave(start: Node, end: Node, prefix: List[Node] = []) -> List[List[str]]:
+    prefix = prefix + [start]
     if start == end:
-        yield [start]
+        yield prefix
         return
-    
-    visited = set(visited) if visited else set()
 
-    print(f"visited: {visited}")
+    max_prev_lower = get_max_prev_lower(prefix)
+    for node in start.connections:
+        if (node.value == "start"):
+            pass
+        elif node.value.islower() and node in prefix and max_prev_lower >= 2: 
+            pass
+        else: 
+            yield from paths_between_with_small_cave(node, end, prefix)
 
-    if start.value.lower() == start.value:
-        visited = visited.union({start})
-    
-    if start.value == "start":
-        visited = visited.union({start})
-    elif start.value.lower() == start.value:
-        if small_cave_available:
-            small_cave_available = False
-        else:
-            visited = visited.union({start})
-    for node in start.connections.difference(visited):
-        for path in paths_between_with_small_cave(node, end, visited, small_cave_available):
-            yield [start] + path
-
+def get_max_prev_lower(prefix):
+    prev_lowers = Counter(node for node in prefix if node.value.islower())
+    max_prev_lower = max(prev_lowers.values())
+    return max_prev_lower
 
 def part2(data: List[str]) -> int:
     return len(part2_paths(data))
@@ -191,6 +185,7 @@ part_2_test_input_paths = [
 
 p2paths = part2_paths(test_input)
 p2paths_str = [path_to_string(path) for path in p2paths]
+print(len(p2paths_str))
 for path in part_2_test_input_paths:
     if path not in p2paths_str:
         print(path)
