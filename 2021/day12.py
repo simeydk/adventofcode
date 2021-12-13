@@ -25,7 +25,7 @@ def read_file(filename):
 
 def parse_input(data: List[str]) -> List[set]:
     edges_str = [set(line.split("-")) for line in data]
-    nodes = {x: Node(x, set()) for s in edges_str for x in s}
+    nodes = {x: Node(x) for s in edges_str for x in s}
     edges = [{nodes[s] for s in edge_str} for edge_str in edges_str]
     for edge in edges:
         start, end = list(edge)
