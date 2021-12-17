@@ -1,70 +1,8 @@
-from typing import DefaultDict, List, Tuple, Dict
-from collections import defaultdict
 import numpy as np
-from dataclasses import dataclass, field
-from functools import cached_property
 import heapq
-
-import day15memo as memo
-
-Coords = Tuple[int, int]
-
-INFINITY = float('inf')
-
-
-@dataclass
-class Node:
-    coords: Coords
-    risk: int = field(hash=False)
-    parents: List['Node'] = field(default_factory = list, repr=False, hash=False)
-    children: List['Node'] = field(default_factory = list, repr=False, hash=False)
-    cost: DefaultDict['Node', Tuple[List['Node'], int]] = field(default_factory = lambda: defaultdict(lambda: ([], INFINITY)), repr=False, hash=False)
-
-    def __post_init__(self):
-        self.cost[self] = ([], 0)
-
-    @cached_property
-    def total_risk(self):
-        if not self.parents: return 0
-        return self.risk + min(parent.total_risk for parent in self.parents)
-
-    def __repr__(self) -> str:
-        return f'{self.coords}: {self.risk}'
-
-    def __hash__(self) -> int:
-        return hash(self.coords)
-
-
-def distance_from(start: Node, end: Node) -> int:
-    done: Set[Node] = set()
-    queue: List[Node] = []
-    
-    push = lambda node: heapq.heappush(queue, (node.cost[start], node))
-    push(start)
-    
-    while queue:
-        popped = heapq.heappop(queue)
-        print popped
-        if parent_node is end:
-            return parent_node.cost[start]
-        for node in parent_node.children:
-            cost = parent_node.cost[start]
-
-        done.add(parent_node)        
-            
-
-n = Node((0,0), 0)
-m = Node((0,1), 1)
-
-print(n.cost is m.cost)
-print(f'n.cost[m] = {n.cost[m]}')
-print(f'm.cost[m] = {m.cost[m]}')
-n.cost[m] = ([], 1)
-print(f'n.cost[m] = {n.cost[m]}')
-print(f'm.cost[m] = {m.cost[m]}')
-
-
-
+from dataclasses import dataclass, field
+from typing import Tuple, DefaultDict, Dict, List, Set
+from collections import defaultdict
 
 def read_file(filename):
     with open(filename) as f:
@@ -73,57 +11,109 @@ def read_file(filename):
 def parse_input(data: List[str]) -> np.ndarray:
     return np.array([[c for c in line] for line in  data], dtype = int)
 
-def risk_node(mx: np.array):
+INFINITY = float('inf')
+
+Coords = Tuple[int, int]
+
+Path = List['Node']
+
+
+@dataclass
+class Node:
+    coords: Coords
+    cost: int
+
+    path_to: DefaultDict['Node', Path] = field(default_factory=lambda: defaultdict(lambda: (INFINITY, [])), repr=False)
+
+    connections: List['Node'] = field(default_factory=list, repr=False)
+
+    def __post_init__(self):
+        self.path_to[self] = (0, [self])
+
+    def __hash__(self) -> int:
+        return hash(self.coords)
+
+    def __str__(self) -> str:
+        return f'{self.coords}: {self.cost}'
+
+    def __repr__(self):
+        return f'{self}'
+
+    def __lt__(self, other):
+        return self.coords < other.coords
+
+
+a = Node((0,0), 5)
+b = Node((0,1), 2)
+
+
+def make_nodes(mx: np.ndarray) -> Dict[Coords, Node]:
     nodes: Dict[Coords, Node] = {}
     for i in range(mx.shape[0]):
         for j in range(mx.shape[1]):
-            coords = (i, j)
-            node = Node(coords, mx[i][j])
-            if (i > 0): node.parents.append(nodes[(i-1, j)])
-            if (j > 0): node.parents.append(nodes[(i, j-1)])
-            nodes[coords] = node
-    for i in range(1, mx.shape[0] - 1):
-        for j in range(1, mx.shape[1] - 1):
-            node = nodes[(i, j)]
-            node.children.append(nodes[(i+1, j)])
-            node.children.append(nodes[(i, j+1)])
-
-    first = nodes[(0,0)]
-    last = nodes[(mx.shape[0]-1, mx.shape[1]-1)]
-
+            c = (i,j)
+            nodes[c] = Node(c, mx[i,j])
+    for i in range(mx.shape[0] - 1):
+        for j in range(mx.shape[1]):
+            a = nodes[(i,j)]
+            b = nodes[(i+1,j)]
+            a.connections.append(b)
+            b.connections.append(a)
+    for i in range(mx.shape[0]):
+        for j in range(mx.shape[1]-1):
+            a = nodes[(i,j)]
+            b = nodes[(i,j+1)]
+            a.connections.append(b)
+            b.connections.append(a)
     return nodes
 
-def lowest_risk(mx: np.array) -> np.array:
-    risk = np.zeros_like(mx, dtype = int)
-    for i in range(1, mx.shape[0]):
-        risk[i][0] = risk[i-1][0] + mx[i][0]
-    for j in range(1, mx.shape[1]):
-        risk[0][j] = risk[0][j-1] + mx[0][j]
-    for i in range(1, mx.shape[0]):
-        for j in range(1, mx.shape[1]):
-            left = risk[i][j-1]
-            above = risk[i-1][j]
-            current = mx[i][j]
-            risk[i][j] = current + min(left, above)
-    return risk
-
-def part1(data: List[str]) -> int:
-    mx = parse_input(data)
-    risk = risk_node(mx)[(9,9)]
-    return risk.total_risk
+def dijkstra(a: Node, b: Node):
+    queue: List[Node] = []
+    completed: Set[Node] = set()
+    heapq.heappush(queue, (a.path_to[a][0], a))
+    while queue:
+        cost, node = heapq.heappop(queue)
+        if node in completed: continue
+        if node is b: return node
+        cost, path = node.path_to[a]
+        for child in node.connections:
+            if child in completed: continue
+            new_cost = cost + child.cost
+            if new_cost < child.path_to[a][0]:
+                child.path_to[a] = (new_cost, path + [child])
+                heapq.heappush(queue, (new_cost, child))
+        completed.add(node)
 
 
-def part2(data: List[str]) -> int:
-    pass
 
-tes_input_1 = [
-    '123',
-    '513',
-    '192',
-]
+def part1(inputs: List[str]):
+    mx = parse_input(inputs)
+    nodes = make_nodes(mx)
+    nodes_list = list(nodes.values())
+    start, end = nodes_list[0], nodes_list[-1]
+    dj =  dijkstra(start, end)
+    # for node in dj.path_to[start][1]:
+    #     print(f"{node} -> {node.path_to[start][0]}")
+    return dj.path_to[start][0]
 
-g = risk_node(parse_input(tes_input_1))
-print(g)
+
+def expand_map(mx: np.ndarray, n = 5):
+    increment = lambda mx, n: np.mod(mx + n - 1, 9) + 1
+    result = mx
+    result = np.concatenate([increment(mx, i) for i in range(n)], axis=1)
+    result = np.concatenate([increment(result, i) for i in range(n)], axis=0)
+
+    return result
+
+def part2(inputs: List[str]):
+    mx = parse_input(inputs)
+    mx = expand_map(mx)
+    nodes = make_nodes(mx)
+    nodes_list = list(nodes.values())
+    start, end = nodes_list[0], nodes_list[-1]
+    dj =  dijkstra(start, end)
+    return dj.path_to[start][0]
+    
 
 test_input = [
     '1163751742',
@@ -138,15 +128,16 @@ test_input = [
     '2311944581',
 ]
 
+print(part2(['11','88']))
+
+
 
 DAY = 15
 TEST_SOLUTION_1 = 40
-TEST_SOLUTION_2 = None
+TEST_SOLUTION_2 = 315
 
 input_raw = read_file(f'2021/data/day{DAY:02d}/input.txt')
 
-print("memo test1:", memo.part1(parse_input(test_input)))
-print("memo part1:", memo.part1(parse_input(input_raw)))
 
 if TEST_SOLUTION_1:
     assert part1(test_input) == TEST_SOLUTION_1
