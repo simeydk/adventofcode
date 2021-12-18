@@ -97,6 +97,23 @@ def part1(inputs: List[str]):
     return dj.path_to[start][0]
 
 
+def expand_map(mx: np.ndarray, n = 5):
+    increment = lambda mx, n: np.mod(mx + n - 1, 9) + 1
+    result = mx
+    result = np.concatenate([increment(mx, i) for i in range(n)], axis=1)
+    result = np.concatenate([increment(result, i) for i in range(n)], axis=0)
+
+    return result
+
+def part2(inputs: List[str]):
+    mx = parse_input(inputs)
+    mx = expand_map(mx)
+    nodes = make_nodes(mx)
+    nodes_list = list(nodes.values())
+    start, end = nodes_list[0], nodes_list[-1]
+    dj =  dijkstra(start, end)
+    return dj.path_to[start][0]
+    
 
 test_input = [
     '1163751742',
