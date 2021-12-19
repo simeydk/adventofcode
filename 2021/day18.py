@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from typing import Iterable, List, TypeVar, Union
 import json
 from dataclasses import dataclass
@@ -7,6 +8,16 @@ from dataclasses import dataclass
 DAY = 18
 TEST_SOLUTION_1 = None
 TEST_SOLUTION_2 = None
+
+class Element(ABC):
+    
+    @property    
+    @abstractmethod
+    def parent(self) -> 'Pair':
+        # this property will be supplied by the inheriting classes
+        # individually
+        pass
+    
 
 @dataclass 
 class Number:
@@ -20,8 +31,10 @@ class Number:
         return Number(self.value, parent)
 
 
+
+
 @dataclass
-class Pair:
+class Pair(list):
     x: Union[Number, 'Pair']
     y: Union[Number, 'Pair']
     parent: 'Pair' = None
