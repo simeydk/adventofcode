@@ -1,165 +1,155 @@
 from abc import ABC, abstractmethod
-from typing import Iterable, List, TypeVar, Union
+from typing import Iterable, List, Tuple, TypeVar, Union
+from dataclasses import dataclass, field
 import json
-from dataclasses import dataclass
-
-
+import math
 
 DAY = 18
-TEST_SOLUTION_1 = None
+TEST_SOLUTION_1 = 4140
 TEST_SOLUTION_2 = None
-
-class Element(ABC):
-    
-    @property    
-    @abstractmethod
-    def parent(self) -> 'Pair':
-        # this property will be supplied by the inheriting classes
-        # individually
-        pass
-    
-
-@dataclass 
-class Number:
-    value: int
-    parent: 'Pair' = None
-
-    def __str__(self):
-        return f"{self.value}"
-
-    def copy(self, parent = None):
-        return Number(self.value, parent)
-
-
-
-
-@dataclass
-class Pair(list):
-    x: Union[Number, 'Pair']
-    y: Union[Number, 'Pair']
-    parent: 'Pair' = None
-
-    @property
-    def level(self) -> int:
-        return 1 + (self.parent.level if self.parent else 0)
-
-    @property
-    def simple(self) -> bool:
-        return (type(self.x) == Number) and (type(self.y) == Number)
-
-    def sub_pairs(self) -> Iterable['Pair']:
-        if type(self.x) == type(self):
-            if self.x.simple: 
-                yield self.x
-            else:
-                yield from self.x.sub_pairs()
-        if type(self.y) == type(self):
-            if self.y.simple:
-                yield self.y
-            else:
-                yield from self.y.sub_pairs()
-
-    def numbers(self) -> Iterable[Number]:
-        if type(self.x) == Number:
-            yield self.x
-        else:
-            yield from self.x.numbers()
-        if type(self.y) == Number:
-            yield self.y
-        else:
-            yield from self.y.numbers()
-
-    def __str__(self):
-        return f"P({self.x}, {self.y})"
-
-    def copy(self, parent: 'Pair' = None):
-        x = self.x.copy()
-        y = self.y.copy()
-        p = Pair(x, y, parent)
-        x.parent = p
-        y.parent = p
-        return p
-
-    @classmethod
-    def from_json(cls, l: list, parent: 'Pair' = None):
-        x = Number(l[0]) if type(l[0]) == int else Pair.from_json(l[0])
-        y = Number(l[1]) if type(l[1]) == int else Pair.from_json(l[1])
-        p = cls(x, y, parent)
-        x.parent = p
-        y.parent = p
-        # print(f"{p.level} {p.simple} {p}")
-        return p
-
-
-
-
-    def explode(self) -> bool:
-        numbers = list(self.numbers())
-        for a in ['x', 'y']:
-            if type(self[a]) == type(self):
-                if self[a].simple:
-                    if self[a].level >= 4:
-                        i = numbers.index(self[a].x)
-                        if i > 1: numbers[i-1].value += self[a].x.value
-                        j = numbers.index(self[a].y)
-                        if j < len(numbers) - 1: numbers[j+1].value += self[a].y.value
-                        self[a] = Number(0, self)
-                        return True
-                else:
-                    if self[a].explode():
-                        return True
-        return False
-
-
-
-    def split(self) -> bool:
-        for a in ['x', 'y']:
-            if type(self[a]) == Number:
-                if self[a] >= 10:
-                    self[a] = Pair(self[a]//2, self[a] //2 + 1, self)
-                    return True
-            elif self[a].split():
-                return True
-            return False
-
-
-    def reduce(self) -> 'Pair':
-        pass
-
-
-
-P = Pair.from_json
-
-p = P([[[[[4,3],4],4],[7,[[8,4],9]]],[1,1]])
-print(p)
-p.explode()
-print(p)
-p.explode()
-print(p)
-p.explode()
-print(p)
-p.split()
-print(p)
 
 def read_file(filename) -> str:
     with open(filename, encoding="UTF-8") as f:
         return f.read()
 
-def parse_input(data:str):
-    lines = data.splitlines()
-    s = f"[{','.join(lines)}]"
-    return json.loads(s)
+P = TypeVar('Pair')
+
+class Element(ABC):
+    pass
+    # @property
+    # @abstractmethod
+    # def parent(self) -> P:
+    #     pass    
+
+@dataclass
+class Number(Element):
+    value: int
+    # parent: P = None
+
+    def __str__(self) -> str:
+        return f"{self.value}"
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+    def __eq__(self, __o: object) -> bool:
+        return self is __o
+
+
+Element = Union['Pair_List', Number]
+Pair_List = List[Element]
+
+def parse_list(l: list) -> Pair_List:
+    items = [Number(x) if type(x) == int else parse_list(x) for x in l]
+    return items
+
+def parse_input(data: str) -> Pair_List:
+    return [parse_list(json.loads(line)) for line in data]
+
+def split_number(number: Number):
+    x = number.value /2
+    return [Number(math.floor(x)), Number(math.ceil(x))]
+
+def split(pair_list: Pair_List) -> True:
+    for i, element in enumerate(pair_list):
+        if type(element) == Number:
+            if element.value > 9:
+                pair_list[i] = split_number(element)
+                return True
+        else:
+            if split(element) == True:
+                return True
+    return False 
+
+def numbers_list(pair_list: Pair_List) -> Iterable[Number]:
+    for element in pair_list:
+        if type(element) == Number:
+            yield element
+        elif type(element) == list:
+            yield from numbers_list(element)
+        else:
+            raise Exception(f"Unknown type: {str(type(element))}")
+
+def is_simple_pair(pair_list: Pair_List) -> bool:
+    return all(type(element) == Number for element in pair_list)
+
+def simple_pairs(pair_list: Pair_List, depth: int = 1, parent = None) -> Iterable[Tuple[Pair_List, int]]:
+    if is_simple_pair(pair_list):
+        yield pair_list, depth, parent
+    else:
+        for element in (element for element in pair_list if type(element) == list):
+             yield from simple_pairs(element, depth + 1, pair_list)
+
+def explode(pair_list: Pair_List, depth: int = 1) -> bool:
+    numbers = list(numbers_list(pair_list))
+    for simple_pair, depth, parent in simple_pairs(pair_list):
+        if depth > 4:
+            first, second = simple_pair
+            # increase number to the left
+            i = numbers.index(first) - 1
+            if i >= 0:
+                numbers[i].value += first.value
+            # increase number to the right
+            j = numbers.index(second) + 1
+            if j < len(numbers):
+                numbers[j].value += second.value
+            # replace original with zero
+            parent[parent.index(simple_pair)] = Number(0)
+            return True
+    return False
+
+def step(pair_list: Pair_List):
+    if explode(pair_list):
+        return True
+    elif split(pair_list):
+        return True
+    else:
+        return False
+
+def reduce(pair_list: Pair_List):
+    while step(pair_list):
+        pass
+    return pair_list
+
+def add(*pair_lists: List[Pair_List]) -> Pair_List:
+    first, *rest = pair_lists
+    result = first
+    for item in rest:
+        result = [result, item]
+    return result
+
+def magnitude(element: Element) -> int:
+    if type(element) == Number:
+        return element.value
+    else:
+    # elif type(element) == List:
+        x, y, *rest = element
+        return magnitude(x) * 3 + magnitude(y) * 2
+    # else:
+    #     raise Exception(f"Unknown type: {str(type(element))}")
+
+
+example = """[[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]]
+[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]
+[[2,[[0,8],[3,4]]],[[[6,7],1],[7,[1,6]]]]
+[[[[2,4],7],[6,[0,5]]],[[[6,8],[2,8]],[[2,1],[4,5]]]]
+[7,[5,[[3,8],[1,4]]]]
+[[2,[2,2]],[8,[8,1]]]
+[2,9]
+[1,[[[9,3],9],[[9,0],[0,7]]]]
+[[[5,[7,4]],7],1]
+[[[[4,2],2],6],[8,7]]"""
+
 
 
 def part1(data: str) -> int:
-    data = parse_input(data)
-    p = Pair.from_json(data)
-    p.explode()
-    for pair in p.sub_pairs():
-        print(f"{pair.level} {'x' if pair.simple else ' '} {pair}")
-    for i, number in enumerate(p.numbers()):
-        print(f"{i:2d} {number}")
-    print(f"{Pair.from_json(data)}")
+    lists = [parse_list(json.loads(x)) for x in data.splitlines()]
+    result = lists[0]
+    for item in lists[1:]:
+        result = add(result, item)
+        reduce(result)
+    print(result)
+    return magnitude(result)
 
 def part2(data: str) -> int:
     pass
