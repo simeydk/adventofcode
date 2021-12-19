@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
+import itertools
 from typing import Iterable, List, Tuple, TypeVar, Union
 from dataclasses import dataclass, field
 import json
 import math
+from itertools import combinations
 
 DAY = 18
 TEST_SOLUTION_1 = 4140
@@ -119,6 +121,8 @@ def magnitude(element: Element) -> int:
     #     raise Exception(f"Unknown type: {str(type(element))}")
 
 
+def add_reduce_mag(a: Pair_List, b: Pair_List):
+    return magnitude(reduce(add(a,b)))
 
 
 def part1(data: str) -> int:
@@ -130,8 +134,30 @@ def part1(data: str) -> int:
     mag = magnitude(result)
     return mag
 
+print(reduce(add(
+    parse_list([[2,[[7,7],7]],[[5,8],[[9,3],[0,2]]]]), 
+    parse_list([[[0,[5,8]],[[1,7],[9,6]]],[[4,[1,2]],[[1,4],2]]]))))
+print(magnitude(parse_list([[[[7,8],[6,6]],[[6,0],[7,7]]],[[[7,8],[8,8]],[[7,9],[0,6]]]])))
+
+def both_ways(pair):
+    a, b = pair
+    yield a,b
+    yield b,a
+
 def part2(data: str) -> int:
-    pass
+    lists = [parse_list(json.loads(x)) for x in data.splitlines()]
+    combos = combinations(lists, 2)
+    the_max = 0
+    for combo in combos:
+        for first, second in both_ways(combo):
+            print(f"1: {str(first)}\n2: {str(second)}")    
+            reduced = reduce(add(first, second))
+            print(f"{reduced}")
+            mag = magnitude(reduced)
+            print(f"{mag}")
+            print("")
+        the_max = max(the_max, mag)
+    return the_max
 
 test_input = """[[[0,[5,8]],[[1,7],[9,6]]],[[4,[1,2]],[[1,4],2]]]
 [[[5,[2,8]],4],[5,[[9,9],0]]]
@@ -144,16 +170,21 @@ test_input = """[[[0,[5,8]],[[1,7],[9,6]]],[[4,[1,2]],[[1,4],2]]]
 [[2,[[7,7],7]],[[5,8],[[9,3],[0,2]]]]
 [[[[5,2],5],[8,[3,7]]],[[5,[7,5]],[4,4]]]"""
 
-input_raw = read_file(f'2021/data/day{DAY:02d}/input.txt')
+test_input = """[[[0,[5,8]],[[1,7],[9,6]]],[[4,[1,2]],[[1,4],2]]]
+[[2,[[7,7],7]],[[5,8],[[9,3],[0,2]]]]"""
 
-if TEST_SOLUTION_1:
-    assert part1(test_input) == TEST_SOLUTION_1
-    print(f"Solution 1:\n{part1(input_raw)}")
-    if TEST_SOLUTION_2:
-        assert part2(test_input) == TEST_SOLUTION_2
-        print(f"Solution 2:\n{part2(input_raw)}")
-    else:
-        print(f"Test 2:\n{part2(test_input)}")
-else:
-    print(f"Test 1:\n{part1(test_input)}")
+input_raw = read_file(f'2021/data/day{DAY:02d}/input.txt')
+print(f"Test 2:\n{part2(test_input)}")
+# print(f"Solution 2:\n{part2(input_raw)}")
+
+# if TEST_SOLUTION_1:
+#     assert part1(test_input) == TEST_SOLUTION_1
+#     print(f"Solution 1:\n{part1(input_raw)}")
+#     if TEST_SOLUTION_2:
+#         assert part2(test_input) == TEST_SOLUTION_2
+#         print(f"Solution 2:\n{part2(input_raw)}")
+#     else:
+#         print(f"Test 2:\n{part2(test_input)}")
+# else:
+#     print(f"Test 1:\n{part1(test_input)}")
     
