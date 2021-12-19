@@ -12,17 +12,8 @@ def read_file(filename) -> str:
     with open(filename, encoding="UTF-8") as f:
         return f.read()
 
-P = TypeVar('Pair')
-
-class Element(ABC):
-    pass
-    # @property
-    # @abstractmethod
-    # def parent(self) -> P:
-    #     pass    
-
 @dataclass
-class Number(Element):
+class Number:
     value: int
     # parent: P = None
 
@@ -34,7 +25,6 @@ class Number(Element):
 
     def __eq__(self, __o: object) -> bool:
         return self is __o
-
 
 Element = Union['Pair_List', Number]
 Pair_List = List[Element]
@@ -129,17 +119,6 @@ def magnitude(element: Element) -> int:
     #     raise Exception(f"Unknown type: {str(type(element))}")
 
 
-example = """[[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]]
-[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]
-[[2,[[0,8],[3,4]]],[[[6,7],1],[7,[1,6]]]]
-[[[[2,4],7],[6,[0,5]]],[[[6,8],[2,8]],[[2,1],[4,5]]]]
-[7,[5,[[3,8],[1,4]]]]
-[[2,[2,2]],[8,[8,1]]]
-[2,9]
-[1,[[[9,3],9],[[9,0],[0,7]]]]
-[[[5,[7,4]],7],1]
-[[[[4,2],2],6],[8,7]]"""
-
 
 
 def part1(data: str) -> int:
@@ -148,8 +127,8 @@ def part1(data: str) -> int:
     for item in lists[1:]:
         result = add(result, item)
         reduce(result)
-    print(result)
-    return magnitude(result)
+    mag = magnitude(result)
+    return mag
 
 def part2(data: str) -> int:
     pass
@@ -164,7 +143,6 @@ test_input = """[[[0,[5,8]],[[1,7],[9,6]]],[[4,[1,2]],[[1,4],2]]]
 [[9,3],[[9,9],[6,[4,9]]]]
 [[2,[[7,7],7]],[[5,8],[[9,3],[0,2]]]]
 [[[[5,2],5],[8,[3,7]]],[[5,[7,5]],[4,4]]]"""
-
 
 input_raw = read_file(f'2021/data/day{DAY:02d}/input.txt')
 
