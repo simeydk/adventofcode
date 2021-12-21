@@ -3,7 +3,7 @@ import numpy as np
 from collections import defaultdict
 
 DAY = 20
-TEST_SOLUTION_1 = None
+TEST_SOLUTION_1 = 35
 TEST_SOLUTION_2 = None
 
 def read_file(filename) -> str:
@@ -40,7 +40,7 @@ def step(mx, map_fn, n = 1):
     for _ in range(n):
         padded = np.pad(mx, 2)
         w, h = mx.shape
-        shifts = [padded[i:i+w+1, j:j+h+1] for i in range(1,4) for j in range(1,4)]
+        shifts = [padded[i:i+w, j:j+h] for i in range(1,4) for j in range(1,4)]
         concat = np_text_concat(shifts)
         mx = map_fn(concat)
     return mx
@@ -51,14 +51,12 @@ def to_string(mx: np.ndarray) -> str:
 def part1(data: str) -> int:
     key, start_pic = parse_input(data)
     mapper = np.vectorize(lambda x: key[int(x, 2)])
-    pic = start_pic
-    pic = step(pic, mapper)
-    print(to_string(start_pic))
+    pic = np.pad(start_pic, 5)
+    print(to_string(pic))
+    pic = step(pic, mapper, 2)
     print('')
     print(to_string(pic))
-    # print(key)
-    # print(pic)
-    # print(append_zeros(pic, 2))
+    return np.sum(pic)
 
 def part2(data: str) -> int:
     pass
