@@ -1,8 +1,10 @@
-from typing import List
+from time import perf_counter
+from typing import List, Set, Tuple
 import numpy as np
+from itertools import permutations, product
 
 DAY = 19
-TEST_SOLUTION_1 = None
+TEST_SOLUTION_1 = 79
 TEST_SOLUTION_2 = None
 
 def read_file(filename) -> str:
@@ -18,11 +20,74 @@ def parse_input(data: str):
     scanners_raw = data.split('\n\n')
     return [parse_scanner_string(s) for s in scanners_raw]
 
+def make_transforms() -> List[np.ndarray]:
+    rotations = [
+        [[0,1,0], [-1,0,0], [0,0,1]],
+        [[1,0,0], [0,0,-1], [0,1,0]],
+        [[0,0,1], [0,1,0], [-1,0,0]],
+    ]
+    identity = np.identity(3, dtype = np.int8)
 
+    tuples = set()
+    for rx, ry, rz in product(range(4), repeat =3):
+        transform = identity
+        for _ in range(rx): transform = np.matmul(transform, rotations[0])
+        for _ in range(ry): transform = np.matmul(transform, rotations[1])
+        for _ in range(rz): transform = np.matmul(transform, rotations[2])
+        tuples.add(tuple(transform.reshape(9)))
+    
+    transforms = [np.array(t, dtype=np.int8).reshape([3,3]) for t in tuples]
+
+    return transforms
+
+transforms = make_transforms()
+
+def equal(a, b) -> bool:
+    return np.all(np.array_equal(np.sort(a,0), np.sort(b,0)))
+
+def nd_to_set(mx: np.ndarray) -> set:
+    return set(tuple(row) for row in mx)
+
+def set_to_nd(s: Set[Tuple[int]]) -> np.ndarray:
+    return np.array(list(s), dtype=np.int8)
 
 def part1(data: str) -> int:
+    start = perf_counter()
     scanners = parse_input(data)
-    return scanners
+    # for i, scanner in enumerate(scanners): scanner.number = i
+    transfroms = make_transforms()
+    scanners_to_process = [*scanners]
+    processed_scanners = []
+    scanner = scanners_to_process.pop(0)
+    beacon_set = nd_to_set(scanner)
+    beacon_mx = set_to_nd(beacon_set)
+    assert equal(scanner, beacon_mx)
+    while scanners_to_process:
+        scanner = scanners_to_process.pop(0)
+        found_scanner = False
+        for t_num, transform in enumerate(transforms):
+            if found_scanner: break
+            scanner_transformed = np.matmul(scanner, transform)
+            # print(scanner_transformed)
+            for nb_num, new_beacon in enumerate(scanner_transformed):
+                if found_scanner: break
+                if new_beacon[0] == 686:
+                    print("scanner686")
+                for ob_num, old_beacon in enumerate(beacon_set):
+                    if old_beacon[0] == -618 and new_beacon[0] == 686:
+                        print("found demo")
+                    offset = new_beacon - old_beacon
+                    scanner_offset = scanner_transformed - offset
+                    scanner_offset_set = nd_to_set(scanner_offset)
+                    if len(beacon_set.intersection(scanner_offset_set)) >= 12:
+                        beacon_set = beacon_set.union(scanner_offset_set)
+                        processed_scanners.append((scanner, transform, offset))
+                        found_scanner = True
+                        print(f"Found scanner. {len(processed_scanners)} found. {len(beacon_set)} beacons. {len(scanners_to_process)} scanners left. running for {perf_counter() - start:.2f}s")
+                        break
+        if not found_scanner: 
+            scanners_to_process.append(scanner)
+    return len(beacon_set)
 
 def part2(data: str) -> int:
     pass
@@ -182,18 +247,6 @@ else:
     
 
 def rotations():
-    subs = ["""100
-010
-001""","""100
-001
-010""","""010
-100
-001""","""010
-001
-100""","""001
-010
-100""","""001
-100
-010"""]
+    
     flips = []
 
