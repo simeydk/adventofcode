@@ -1,103 +1,51 @@
-from functools import cached_property
-from typing import Iterable, List, NamedTuple, Tuple, Union
-import re
-import numpy as np
-from math import prod
-from itertools import product
 from dataclasses import dataclass
+from functools import cached_property
+from typing import Iterable, List, Optional, Tuple, Union
+import re
 
 DAY = 22
 TEST_SOLUTION_1 = 590784
-TEST_SOLUTION_2 = None # 2758514936282235
+TEST_SOLUTION_2 = 2758514936282235
 
-x = 1_000_000_000_000_000_000_000_000_000_000
-y = 10 ** 100
-print(y)
-print(y * y)
 
 def read_file(filename) -> str:
     with open(filename, encoding="UTF-8") as f:
         return f.read()
 
-def parse_line(line: str):
-    result = re.findall('(\w+) x=(-?\d+)..(-?\d+),y=(-?\d+)..(-?\d+),z=(-?\d+)..(-?\d+)', line)[0]
+def parse_line(line: str) -> Tuple[bool, Tuple[int, int], Tuple[int, int], Tuple[int, int]]:
+    result = re.findall(r'(\w+) x=(-?\d+)..(-?\d+),y=(-?\d+)..(-?\d+),z=(-?\d+)..(-?\d+)', line)[0]
     on = result[0] == 'on'
     x_min, x_max, y_min, y_max, z_min, z_max = [int(x) for x in result[1:]]
     x_max = x_max + 1
     y_max = y_max + 1
     z_max = z_max + 1
-    return on, np.array([x_min, x_max]), np.array([y_min, y_max]), np.array([z_min, z_max])
-
+    return on,(x_min, x_max), (y_min, y_max), (z_min, z_max)
+ 
 def parse_input(data: str):
     return [parse_line(line) for line in data.splitlines()]
 
-
-def clamp_instruction(instruction, grid_ranges):
-    on, x_range, y_range, z_range = instruction
-    x_range = x_range.clip(*grid_ranges[0])
-    y_range = y_range.clip(*grid_ranges[1])
-    z_range = z_range.clip(*grid_ranges[2])
-    new_instruction = on, x_range, y_range, z_range
-    return new_instruction
-
-def process_subgrid(grid_ranges, instructions):
-    clamped_instructions = [clamp_instruction(instruction, grid_ranges) for instruction in instructions]
-    grid = np.zeros([hi - low for low, hi in grid_ranges], dtype=bool)
-    for on, x_range, y_range, z_range in clamped_instructions:
-        x_range -= grid_ranges[0][0]
-        y_range -= grid_ranges[1][0]
-        z_range -= grid_ranges[2][0]
-        grid[x_range[0]:x_range[1], y_range[0]:y_range[1], z_range[0]:z_range[1]] = on
-    return np.sum(grid)
-
-def part1(data: str) -> int:
-    instructions = parse_input(data)
-    grid_ranges = [(-50,51), (-50,51), (-50,51)]
-    return process_subgrid(grid_ranges, instructions)
-
-def biggest_ranges(instructions):
-    min_x = min(x_range[0] for on, x_range, y_range, z_range in instructions)
-    max_x = max(x_range[1] for on, x_range, y_range, z_range in instructions)
-    min_y = min(y_range[0] for on, x_range, y_range, z_range in instructions)
-    max_y = max(y_range[1] for on, x_range, y_range, z_range in instructions)
-    min_z = min(z_range[0] for on, x_range, y_range, z_range in instructions)
-    max_z = max(z_range[1] for on, x_range, y_range, z_range in instructions)
-    return (min_x, max_x), (min_y, max_y), (min_z, max_z)
-
-def split_range(the_range: Tuple[int], chunk_size = 1000) -> List[Tuple[int]]:
-    low, hi = the_range
-    return [(start, min(start + chunk_size, hi)) for start in range(low, hi,chunk_size)]
-
-def split_ranges(ranges, chunk_sizes):
-    splits = [split_range(r, c) for r, c in zip(ranges, chunk_sizes)]
-    return product(*splits)
 @dataclass(frozen=True)
 class Side:
     start: int
-    end: int = None
+    end: int
 
-    def __post_init__(self, *args):
-        if self.end is not None: return
-        
-        args = self.start
-        _set = lambda key, value: object.__setattr__(self, key, value)
-        if type(args) == int:
-            _set("start", 0)
-            _set("end", args)
-        else:
-            _set("start", args[0])
-            _set("end", args[1])
-
-        if self.end < self.start:
-            raise ValueError("End must be greater than start")
+    def __post_init__(self):
+        if self.size < 0:
+            raise ValueError(f"Start {self.start} > end {self.end}")
 
     @cached_property
     def size(self) -> int:
-        size = self.end - self.start
-        if size < 0: raise ValueError(f"Negative Side size: {size}")
-        return size
+        return self.end - self.start
 
-    def intersect(self, other: 'Side') -> 'Side':
+    def split(self, splits: Union[int, Iterable[int]]) -> List['Side']:
+        if isinstance(splits, int): splits = [splits]
+        splits = list(splits)
+        splits.sort()
+        splits = [0] + splits + [self.size]
+        splits = [self.start + (end - start) // 2 for start, end in zip(splits[:-1], splits[1:])]
+        return [Side(start, end) for start, end in zip(splits[:-1], splits[1:])]
+
+    def intersect(self, other: 'Side') -> Union['Side', None]:
         start = max(self.start, other.start)
         end = min(self.end, other.end)
         if start < end:
@@ -105,93 +53,137 @@ class Side:
         else:
             return None
 
-    def split(self, split_points: Union[int, Iterable[int]]) -> List['Side']:
-        if type(split_points) == int: split_points = [split_points]
-        split_points = sorted(point for point in split_points if point > self.start and point < self.end)
-        split_points = [self.start, *split_points, self.end]
-        return [Side(split_points[i], split_points[i+1]) for i in range(len(split_points)-1)]
+    @classmethod
+    def create(cls, *args) -> 'Side':
+        if len(args) == 1:
+            arg = args[0]
+            if type(arg) == Side:
+                return arg
+            elif type(arg) == int:
+                return cls(0, arg)
+            elif isinstance(arg, Iterable):
+                return cls(*arg)
+        if len(args) == 2:
+            return cls(*args)
+        else: raise ValueError(f"Invalid args: {args}")
 
-s = Side(0, 10)
-t = Side(0,10)
-print(Side(10), Side(0, 10), Side((0,10)))
-assert Side(10) == Side(0, 10) 
-assert Side(10) == Side((0,10))
-assert Side(0,1) == Side(0,1)
-assert Side(0,10).split(5) == [Side(0,5), Side(5,10)]
-assert Side(0,10).split([2,5]) == [Side(0,2), Side(2,5), Side(5,10)]
-assert Side(0,10).split([2,5, -7, 15]) == [Side(0,2), Side(2,5), Side(5,10)]
-assert Side(0,10).split(-1) == [Side(0,10)]
+    def __str__(self):
+        return f"({self.start}, {self.end})"
+
+    def __repr__(self):
+        return str(self)
+
+
+
+assert Side(0,5) == Side.create(5) == Side.create(0,5) == Side.create(Side(0,5))
+
 
 @dataclass(frozen=True)
-class Cube:
+class Block:
     x: Side
     y: Side
     z: Side
 
     def __post_init__(self):
-        _set = lambda key, value: object.__setattr__(self, key, value)
-        if type(self.x) != Side: _set('x', Side(self.x))
-        if type(self.y) != Side: _set('y', Side(self.y))
-        if type(self.z) != Side: _set('z', Side(self.z))
+        if self.size < 0:
+            raise ValueError(f"Size is negative: {self.size} = {self.x.size} * {self.y.size} * {self.z.size}")
 
-    def intersect(self, other: 'Cube') -> 'Cube':
-        x = self.x.intersect(other.x)
-        y = self.y.intersect(other.y)
-        z = self.z.intersect(other.z)
-        if x and y and z:
-            return Cube(x, y, z)
-
-    @cached_property
+    @property
     def size(self) -> int:
-        return np.prod(np.array([self.x.size, self.y.size, self.z.size]))
-    
-    def split(self, x_splits: Union[int, Iterable[int]] = [], y_splits: Union[int, Iterable[int]] = [], z_splits: Union[int, Iterable[int]] = []) -> List['Cube']:
-        x_sides = self.x.split(x_splits)
-        y_sides = self.y.split(y_splits)
-        z_sides = self.z.split(z_splits)
-        return [Cube(x, y, z) for x, y, z in product(x_sides, y_sides, z_sides)]
+        return self.x.size * self.y.size * self.z.size
+
+    def split(self, splits: Union[int, Iterable[int]]) -> List['Block']:
+        x_sides = self.x.split(splits)
+        y_sides = self.y.split(splits)
+        z_sides = self.z.split(splits)
+        return [Block(x, y, z) for x, y, z in zip(x_sides, y_sides, z_sides)]
+
+    def intersect(self, other: 'Block') -> Union['Block', None]:
+        x_intersect = self.x.intersect(other.x)
+        y_intersect = self.y.intersect(other.y)
+        z_intersect = self.z.intersect(other.z)
+        if x_intersect and y_intersect and z_intersect:
+            intersect = Block(x_intersect, y_intersect, z_intersect)
+            if intersect.size > self.size or intersect.size > other.size:
+                raise ValueError(f"Intersect is bigger than either: {intersect.size} > {self.size} or {intersect.size} > {other.size}")
+            return Block(x_intersect, y_intersect, z_intersect)
+        else:
+            return None
+
+    def intersect_multi(self, others: Iterable['Block']) -> List['Block']:
+        intersects = (self.intersect(block) for block in others)
+        return [x for x in intersects if x]
+
+    def __str__(self):
+        return f"Block({self.x}, {self.y}, {self.z})"
 
     def __repr__(self):
-        return f"Cube(({self.x.start}, {self.x.end}), ({self.y.start}, {self.y.end}), ({self.z.start}, {self.z.end}))"
+        return str(self)
 
-c = lambda x: Cube(x, x, x)
+    @classmethod
+    def create(cls, *args):
+        if len(args) == 3:
+            return cls(*[Side.create(arg) for arg in args])
+        elif len(args) == 1:
+            side = Side.create(args[0])
+            return cls(side, side, side)
+        else:
+            raise Exception(f"Invalid args for Block.create: {args}")
 
-assert Cube((0,10), (0,10), (0,10)) == Cube(Side(0,10), Side(0,10), Side(0,10))
-assert c(10) == Cube((0,10), (0,10), (0,10))
+    @classmethod
+    def overlaps(cls, blocks: List[Tuple[bool, 'Block']]) -> int:
+        positives: List[Block] = []
+        negatives: List[Block] = []
+        for on, block in blocks:
+            pos_interesctions = block.intersect_multi(positives)
+            neg_interesctions = block.intersect_multi(negatives)
+            negatives.extend(pos_interesctions)
+            negatives.extend(neg_interesctions)
+            if on: positives.append(block)
 
-assert c(10).split() == [c(10)]
-assert Cube(10, 10, 10).split(5) == [Cube(5, 10, 10), Cube((5,10), 10, 10)]
+        return sum(block.size for block in positives) - sum(block.size for block in negatives)
 
-assert Cube(10, 10, 10).split(5,3) == [Cube((0, 5), (0, 3), (0, 10)), Cube((0, 5), (3, 10), (0, 10)), Cube((5, 10), (0, 3), (0, 10)), Cube((5, 10), (3, 10), (0, 10))]
+def combined_size(blocks: List[Tuple[bool, Block]], bounding_block: Optional[Block] = None) -> int:
 
-def total_area(cubes: List[Tuple[bool, Cube]]) -> int:
-    positives: List[Cube] = []
-    negatives: List[Cube] = []
-    for on, cube in cubes:
-        pos_intersects = filter(lambda x: x, [cube.intersect(pos_cube) for pos_cube in positives])
-        neg_intersects = filter(lambda x: x, [cube.intersect(neg_cube) for neg_cube in negatives])
-        if on: positives.append(cube)
-        negatives.extend(pos_intersects)
-        positives.extend(neg_intersects)
-    total = 0
-    for cube in positives:
-        # print (f"{total:,d} + {cube.size:,d}")
-        total += cube.size 
-    for cube in negatives: 
-        # print (f"{total:,d} - {cube.size:,d}")
-        total -= cube.size
-    return total
-    # return sum(cube.size for cube in positives) - sum(cube.size for cube in negatives)
+    positives: List[Block] = []
+    negatives: List[Block] = []
+    for on, block in blocks:
+        if bounding_block:
+            block = block.intersect(bounding_block)
+            if not block: continue
+        pos_interesctions = block.intersect_multi(positives)
+        neg_interesctions = block.intersect_multi(negatives)
+        negatives.extend(pos_interesctions)
+        positives.extend(neg_interesctions)
+        if on: positives.append(block)
 
+    return sum(block.size for block in positives) - sum(block.size for block in negatives)
 
+B = Block.create
+a, b = Side(0, 6), Side(4,10)
 
-assert total_area([(True, c(10)), (False, c(5))]) == 10 ** 3 - 5 ** 3
+aa, ab, ba, bb = B(a,a,1), B(a,b,1), B(b,a,1), B(b,b,1)
+
+assert combined_size([(True, aa)]) == 36
+assert combined_size([(True, aa), (True, ab)]) == 60
+assert combined_size([(True, aa), (True, ab), (True, ba)]) == 84
+
+print(combined_size([
+    (True, aa),
+    (True, ab),
+    (True, ba),
+    (True, bb),
+    ]))
+
+def part1(data: str) -> int:
+    instructions = parse_input(data)
+    blocks = [(on, Block.create(x, y, z)) for on, x, y, z in instructions]
+    return combined_size(blocks, Block.create((-50,51))) 
 
 def part2(data: str) -> int:
-    lines = parse_input(data)
-    cubes = [(on, Cube(x, y, z)) for on, x, y, z in lines]
-    return total_area(cubes)
-
+    instructions = parse_input(data)
+    blocks = [(on, Block.create(x, y, z)) for on, x, y, z in instructions]
+    return combined_size(blocks)
 
 
 test_input = """on x=-20..26,y=-36..17,z=-47..7
@@ -283,7 +275,7 @@ off x=-70369..-16548,y=22648..78696,z=-1892..86821
 on x=-53470..21291,y=-120233..-33476,z=-44150..38147
 off x=-93533..-4276,y=-16170..68771,z=-104985..-24507"""
 
-assert part1(test_input_2) == 474140
+# assert part1(test_input_2) == 474140
 
 input_raw = read_file(f'2021/data/day{DAY:02d}/input.txt')
 
