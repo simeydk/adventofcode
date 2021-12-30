@@ -27,7 +27,12 @@ class PodType(Enum):
 class Position:
     x: int
     y: int
-    connections: List['Position'] = field(default_factory=list, hash=False, repr=False)
+    connections: List['Position'] = field(default_factory=list, hash=False, repr=False, compare=False)
+
+a = Position(1,2)
+b = Position(1,2)
+assert a is not b
+assert a == b
 
 class Pod(NamedTuple):
     type: PodType
@@ -36,9 +41,7 @@ Pair = Tuple[Pod, Position]
 @dataclass(frozen=True)
 class Burrow:
     pairs:  Tuple[Pair, ...]
-    positions: List[Position] = field(default_factory=list, hash=False, repr=False)
-    _created: datetime = field(default_factory=datetime.now, hash=False, repr=False)
-
+    positions: List[Position] = field(default_factory=list, hash=False, repr=False, compare=False)
 
     @cached_property
     def occupied_positions(self) -> Set[Position]:
@@ -77,6 +80,9 @@ class Burrow:
             completed.add(burrow)
         return None 
 
+    @cached_property
+    def solved(self):
+        return self == Burrow.solution
 
     def __str__(self):
         grid = [[' ' for _ in range(13)] for _ in range(5)]
@@ -85,10 +91,12 @@ class Burrow:
             grid[pos.x][pos.y] =  pod.type.name if type(pod) == Pod else "."
         return "\n".join(["".join(row) for row in grid])    
 
-    def __lt__(self, other):
-        return self._created < other._created
+    def __repr__(self):
+        pair_str = ", ".join(f"({pod.type.name}: ({pos.x}, {pos.y}))" for pod, pos in self.pairs)
+        return f"B({pair_str})"
 
     @classmethod
+    @lru_cache(maxsize=100)
     def from_string(cls, data: str) -> 'Burrow':
         positions = []
         pairs: List[Tuple[Pod, Position]] = []
@@ -110,7 +118,6 @@ class Burrow:
 
     @classmethod
     @property
-    @lru_cache
     def solution(cls) -> 'Burrow':
         return Burrow.from_string("""#############
 #...........#
@@ -125,13 +132,22 @@ solution_str = """#############
   #A#B#C#D#
   #########"""
 
-assert Burrow.from_string(solution_str) == Burrow.solution
+b = Burrow.from_string(solution_str)
+s = Burrow.solution
+
+assert Burrow.solution.solved
+
+assert b == s
 
 def part1(data: str) -> int:
     start = Burrow.from_string(data)
     print(str(start))
-    print(start.occupied_positions)
-    print(start.solve())
+    for move in start.possible_moves():
+        burrow = start.move(*move)
+        print(move)
+        print(str(burrow))
+        print(burrow.solved)
+    # print(start.solve())
 
 def part2(data: str) -> int:
     pass
