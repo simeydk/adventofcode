@@ -1,6 +1,7 @@
+from collections import defaultdict
 import heapq
 import itertools
-from typing import Generator, List, NamedTuple, Optional, Set, Tuple
+from typing import DefaultDict, Dict, Generator, List, NamedTuple, Optional, Set, Tuple
 from enum import Enum
 from itertools import combinations
 from dataclasses import dataclass, field
@@ -16,65 +17,66 @@ def read_file(filename) -> str:
         return f.read()
 
 
-class PodType(Enum):
-    A = 1
-    B = 10
-    C = 100
-    D = 1000
-
-
-@dataclass(frozen = True)
-class Position:
-    x: int
-    y: int
-    connections: List['Position'] = field(default_factory=list, hash=False, repr=False, compare=False)
-
-a = Position(1,2)
-b = Position(1,2)
-assert a is not b
-assert a == b
-
-class Pod(NamedTuple):
-    type: PodType
+Pod = str
+Position = Tuple[int, int]
 
 Pair = Tuple[Pod, Position]
+Move = Tuple[Position, Position]
+Path = List[Move]
+
+get_cost: Dict[Pod, int] = {
+    'A': 1,
+    'B': 10,
+    'C': 100,
+    'D': 1000,
+}
+
 @dataclass(frozen=True)
 class Burrow:
     pairs:  Tuple[Pair, ...]
-    positions: List[Position] = field(default_factory=list, hash=False, repr=False, compare=False)
+    positions: List[Position] = field(hash=False, repr=False, compare=False)
+    connections: Dict[Position, List[Position]] = field(hash=False, repr=False, compare=False)
 
     @cached_property
     def occupied_positions(self) -> Set[Position]:
         return {pos for _, pos in self.pairs}
 
-    def possible_moves(self) -> Generator[Pair, None, None]:
+    def possible_moves(self) -> Generator[Move, None, None]:
         for pod, position in self.pairs:
-            for connection in position.connections:
+            for connection in self.connections[position]:
                 if connection not in self.occupied_positions:
-                    yield (pod, connection)
+                    yield (position, connection)
 
-    def move(self, pod: Pod, new_position: Position) -> 'Burrow':
-        pairs = tuple((the_pod, new_position if the_pod is pod else pos) for the_pod, pos in self.pairs)
-        return Burrow(pairs, self.positions)
+    def move(self, move: Move) -> Tuple['Burrow', int]:
+        curr_pos, new_pos = move
+        pod = self.pod_at(curr_pos)
+        if type(pod) == Pod:
+            cost = get_cost[pod]
+            pairs = tuple((pair[0], new_pos) if pair[1] == curr_pos else pair for pair in self.pairs)
+            return Burrow(pairs, self.positions, self.connections), cost
+        else: 
+            raise Exception(f"Move Error: No pod at {curr_pos} to move to {new_pos}")
 
     def pod_at(self, position: Position) -> Optional[Pod]:
         for pod, pos in self.pairs:
             if pos == position:
                 return pod
 
-    def solve(self) -> Optional[Tuple[int, 'Burrow', List[Pair]]]:
-        queue: List[Tuple[int, int, Burrow, List[Pair]]] = []
+    def solve(self) -> Optional[Tuple[int, 'Burrow', Path]]:
+        queue: List[Tuple[int, int, Burrow, Path]] = []
         completed: Set[Burrow] = set()
         ticker = itertools.count()
         tick = lambda: next(ticker)
         heapq.heappush(queue, (0, tick(), self, []))
         while queue:
             cost, _, burrow, path = heapq.heappop(queue)
+            # print(str(burrow))
+            # print(cost, path)
             if burrow in completed: continue
-            if burrow == Burrow.solution: return cost, burrow, path
+            if burrow.solved: return cost, burrow, path
             for move in burrow.possible_moves():
-                new_burrow = burrow.move(*move)
-                new_cost = move[0].type.value + cost
+                new_burrow, extra_cost = burrow.move(move)
+                new_cost = cost + extra_cost
                 new_path = path + [move]
                 heapq.heappush(queue, (new_cost, tick(), new_burrow, new_path))
             completed.add(burrow)
@@ -88,32 +90,37 @@ class Burrow:
         grid = [[' ' for _ in range(13)] for _ in range(5)]
         for pos in self.positions:
             pod = self.pod_at(pos)
-            grid[pos.x][pos.y] =  pod.type.name if type(pod) == Pod else "."
+            grid[pos[0]][pos[1]] =  pod if type(pod) == Pod else "."
         return "\n".join(["".join(row) for row in grid])    
 
-    def __repr__(self):
-        pair_str = ", ".join(f"({pod.type.name}: ({pos.x}, {pos.y}))" for pod, pos in self.pairs)
-        return f"B({pair_str})"
+    # @lru_cache
+    # def __repr__(self):
+    #     pair_str = ", ".join(f"({pod.type.name}: ({pos.x}, {pos.y}))" for pod, pos in self.pairs)
+    #     return f"B({pair_str})"
+
+    def __eq__(self, other):
+        return str(self) == str(other)
 
     @classmethod
     @lru_cache(maxsize=100)
     def from_string(cls, data: str) -> 'Burrow':
-        positions = []
+        positions: List[Position] = []
         pairs: List[Tuple[Pod, Position]] = []
+        connections: DefaultDict[Position, List[Position]] = defaultdict(list)
         for i, line in enumerate(data.splitlines()):
             for j, char in enumerate(line):
                 if char in ".ABCD":
-                    position = Position(i, j)
+                    position = (i, j)
                     positions.append(position)
                     if char in "ABCD":
-                        pod = Pod(PodType[char])
+                        pod = char
                         pairs.append((pod, position))
         for pos_a, pos_b in combinations(positions, 2):
-            diff = (pos_a.x - pos_b.x, pos_a.y - pos_b.y)
+            diff = (pos_a[0] - pos_b[0], pos_a[1] - pos_b[1])
             if diff in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
-                pos_a.connections.append(pos_b)
-                pos_b.connections.append(pos_a)
-        return Burrow(tuple(pairs), positions)
+                connections[pos_a].append(pos_b)
+                connections[pos_b].append(pos_a)
+        return Burrow(tuple(pairs), positions, connections)
 
 
     @classmethod
@@ -143,11 +150,13 @@ def part1(data: str) -> int:
     start = Burrow.from_string(data)
     print(str(start))
     for move in start.possible_moves():
-        burrow = start.move(*move)
+        burrow, _ = start.move(move)
         print(move)
         print(str(burrow))
         print(burrow.solved)
-    # print(start.solve())
+    solution = start.solve() 
+    print(solution)
+    return solution[0]
 
 def part2(data: str) -> int:
     pass
@@ -158,11 +167,11 @@ test_input = """#############
   #A#D#C#A#
   #########"""
 
-test_input = """#############
-#........D..#
-###A#B#C#.###
-  #A#B#C#D#
-  #########"""
+# test_input = """#############
+# #...........#
+# ###B#A#C#D###
+#   #A#B#C#D#
+#   #########"""
 
 input_raw = """#############
 #...........#
