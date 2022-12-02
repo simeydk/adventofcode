@@ -7,6 +7,7 @@ from itertools import combinations
 from dataclasses import dataclass, field
 from functools import cached_property, lru_cache
 from datetime import datetime
+import math
 
 DAY = 11
 TEST_SOLUTION_1 = None
@@ -42,9 +43,10 @@ class Burrow:
         return {pos for _, pos in self.pairs}
 
     def possible_moves(self) -> Generator[Move, None, None]:
-        for pod, position in self.pairs:
+        for pair in self.pairs:
+            pod, position = pair
             for connection in self.connections[position]:
-                if connection not in self.occupied_positions:
+                if connection not in self.occupied_positions and pair not in self.pods_in_place:
                     yield (position, connection)
 
     def move(self, move: Move) -> Tuple['Burrow', int]:
@@ -62,23 +64,44 @@ class Burrow:
             if pos == position:
                 return pod
 
+    @cached_property
+    def pods_in_place(self) -> List[Pair]:
+        pods = {pos: pod for pod, pos in self.pairs}
+        pairs: List[Pair] = []
+        for col, letter in [(3, 'A'), (5, 'B'), (7, 'C'), (9, 'D')]:
+            if pods.get((3, col)) == letter:
+                pairs.append((letter, (3, col)))
+                if pods.get((2, col)) == letter:
+                    pairs.append((letter, (2, col)))
+        return pairs
+
     def solve(self) -> Optional[Tuple[int, 'Burrow', Path]]:
-        queue: List[Tuple[int, int, Burrow, Path]] = []
+        # Initialise trackers
+        queue: List[Tuple[Tuple[int, ...], Burrow, Path]] = []
         completed: Set[Burrow] = set()
+        best_cost: DefaultDict[Burrow, int] = defaultdict(lambda: 10 ** 99999)
         ticker = itertools.count()
         tick = lambda: next(ticker)
-        heapq.heappush(queue, (0, tick(), self, []))
+
+        heapq.heappush(queue, ((8, 0, tick()), self, []))
+        best_cost[self] = 0
+        
         while queue:
-            cost, _, burrow, path = heapq.heappop(queue)
-            # print(str(burrow))
-            # print(cost, path)
+            costs, burrow, path = heapq.heappop(queue)
             if burrow in completed: continue
+            cost = costs[1]
             if burrow.solved: return cost, burrow, path
             for move in burrow.possible_moves():
                 new_burrow, extra_cost = burrow.move(move)
                 new_cost = cost + extra_cost
-                new_path = path + [move]
-                heapq.heappush(queue, (new_cost, tick(), new_burrow, new_path))
+                if new_cost < best_cost[new_burrow]:
+                    new_path = path + [move]
+                    t = tick()
+                    heapq.heappush(queue, ((8, new_cost, t), new_burrow, new_path))
+                    best_cost[new_burrow] = new_cost
+                    if t % 500 == 0: 
+                        print(str(new_burrow))
+                        print(t, cost, len(path))
             completed.add(burrow)
         return None 
 
@@ -142,6 +165,8 @@ solution_str = """#############
 b = Burrow.from_string(solution_str)
 s = Burrow.solution
 
+print(s)
+
 assert Burrow.solution.solved
 
 assert b == s
@@ -166,6 +191,9 @@ test_input = """#############
 ###B#C#B#D###
   #A#D#C#A#
   #########"""
+
+b = Burrow.from_string((test_input))
+print(b.pods_in_place)
 
 # test_input = """#############
 # #...........#
