@@ -26,10 +26,7 @@ def parse_row(row_str:str):
     a_str, b_str = row_str.split(',')
     a = tuple(map(int, a_str.split('-')))
     b = tuple(map(int, b_str.split('-')))
-    assert a[0] <= a[1]
-    assert b[0] <= b[1]
     return a, b
-    
 
 def part1(input_raw: str):
     rows = input_raw.splitlines()
@@ -37,13 +34,10 @@ def part1(input_raw: str):
     results = [contains_either(*pair) for pair in pairs]
     return sum(results)
 
-
-
 def overlaps(a,b) -> bool:
     set_a = set(range(a[0], a[1] + 1))
     set_b = set(range(b[0], b[1] + 1))
     return bool(len(set_a.intersection(set_b)))
-    return ((a[0] <= b[0] <= a[1]) or (a[0] <= b[1] <= a[1]))
 
 def part2(input_raw: str):
     rows = input_raw.splitlines()
