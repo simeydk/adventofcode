@@ -1,7 +1,7 @@
-
 def read_file_to_one_big_string(filename):
     with open(filename) as f:
         return f.read()
+
 
 day_number = 10
 part1_test_solution = 13140
@@ -14,8 +14,10 @@ part2_test_solution = """
 06  #######.......#######.......#######....."""
 
 
-input_raw = read_file_to_one_big_string(f'2022/data/day{day_number:02d}/input.txt')
-test_input = read_file_to_one_big_string(f'2022/data/day{day_number:02d}/test_input.txt')
+input_raw = read_file_to_one_big_string(f"2022/data/day{day_number:02d}/input.txt")
+test_input = read_file_to_one_big_string(
+    f"2022/data/day{day_number:02d}/test_input.txt"
+)
 
 # test_input = """
 # noop
@@ -31,40 +33,45 @@ def parse_input(input_raw):
     for line in lines:
         words = line.split()
         match words[0]:
-            case 'noop':
+            case "noop":
                 results.append(value)
-            case 'addx':
+            case "addx":
                 results.append(value)
                 value += int(words[1])
                 results.append(value)
             case other:
-                raise ValueError(f'Invalid Instruction {other}')
+                raise ValueError(f"Invalid Instruction {other}")
     return results
+
 
 def part1(input_raw: str):
     results = [1] + parse_input(input_raw)
     # return results
-    entries =  [i for i in range(20, min(len(results), 220+1), 40)]
+    entries = [i for i in range(20, min(len(results), 220 + 1), 40)]
     return sum([(results[i] * i) for i in entries])
+
 
 def chunk_list(arr, chunk_size):
     result = []
     arr = list(arr)
     for i in range(0, len(arr), chunk_size):
-        result.append(arr[i:i+chunk_size])
+        result.append(arr[i : i + chunk_size])
     return result
 
 
 def pixels_to_str(pixels):
-    s = ''
+    s = ""
     for i, chunk in enumerate(chunk_list(pixels, 40)):
-        s += f'\n{i+1:02d}  '
-        s += ''.join(chunk)
+        s += f"\n{i+1:02d}  "
+        s += "".join(chunk)
     return s
+
 
 def part2(input_raw: str):
     sprite_positions = parse_input(input_raw)
-    pixels = ['#' if abs((i % 40) - sprite_positions[i]) <= 1 else '.' for i in range(240)]
+    pixels = [
+        "#" if abs((i % 40) - sprite_positions[i]) <= 1 else "." for i in range(240)
+    ]
     s = pixels_to_str(pixels)
     return s
 
@@ -82,7 +89,3 @@ if part2_test_solution is None:
 
 assert part2(test_input) == part2_test_solution
 print(f"Part 2: {part2(input_raw)}")
-
-
-
-

@@ -1,10 +1,11 @@
-
 from dataclasses import dataclass, field
 from functools import cached_property
+
 
 def read_file_to_one_big_string(filename):
     with open(filename) as f:
         return f.read()
+
 
 day_number = 7
 part1_test_solution = 95437
@@ -33,17 +34,20 @@ $ ls
 8033020 d.log
 5626152 d.ext
 7214296 k
-""".strip('\n')
+""".strip(
+    "\n"
+)
 
 
-input_raw = read_file_to_one_big_string(f'2022/data/day{day_number:02d}/input.txt')
+input_raw = read_file_to_one_big_string(f"2022/data/day{day_number:02d}/input.txt")
+
 
 @dataclass(frozen=True)
 class Folder:
     name: str
-    files: list['File'] = field(default_factory=list)
-    folders: list['Folder'] = field(default_factory=list)
-    
+    files: list["File"] = field(default_factory=list)
+    folders: list["Folder"] = field(default_factory=list)
+
     @cached_property
     def children(self):
         return self.files + self.folders
@@ -52,11 +56,11 @@ class Folder:
     def size(self):
         return sum(item.size for item in self.children)
 
+
 @dataclass(frozen=True)
 class File:
     name: str
     size: int
-
 
 
 def parse_input(input_raw):
@@ -64,26 +68,27 @@ def parse_input(input_raw):
     all_folders: list[Folder] = []
     stack: list[Folder] = []
     for line in lines:
-        if line == '$ cd ..':
+        if line == "$ cd ..":
             stack.pop()
-        elif line.startswith('$ cd'):
-            folder_name = line.split(' ')[2]
+        elif line.startswith("$ cd"):
+            folder_name = line.split(" ")[2]
             folder = Folder(folder_name)
             all_folders.append(folder)
             if stack:
                 stack[-1].folders.append(folder)
             stack.append(folder)
             pass
-        elif line == '$ ls':
+        elif line == "$ ls":
             pass
-        elif line.startswith('dir '):
+        elif line.startswith("dir "):
             pass
-        else: 
-            size, filename = line.split(' ')
+        else:
+            size, filename = line.split(" ")
             size = int(size)
             file = File(filename, size)
             stack[-1].files.append(file)
     return all_folders
+
 
 def part1(input_raw: str):
     all_folders = parse_input(input_raw)
@@ -102,7 +107,6 @@ def part2(input_raw: str):
             return size
 
 
-
 if part1_test_solution is None:
     print(f"Part 1 Test: {part1(test_input)}")
     quit()
@@ -116,7 +120,3 @@ if part2_test_solution is None:
 
 assert part2(test_input) == part2_test_solution
 print(f"Part 2: {part2(input_raw)}")
-
-
-
-

@@ -4,8 +4,8 @@ def read_file(filename):
 
 
 def part1(data):
-    positions = [int(x) for x in data[0].split(',')]
-    min_cost = 10 ** 10
+    positions = [int(x) for x in data[0].split(",")]
+    min_cost = 10**10
     min_pos = -1
     for i in range(min(positions), max(positions) + 1):
         cost = sum([abs(x - i) for x in positions])
@@ -14,13 +14,15 @@ def part1(data):
             min_pos = i
     return min_pos, min_cost
 
+
 def cost_p2(dist):
     a = abs(dist)
     return a * (a + 1) // 2
-    
+
+
 def part2(data):
-    positions = [int(x) for x in data[0].split(',')]
-    min_cost = 10 ** 10
+    positions = [int(x) for x in data[0].split(",")]
+    min_cost = 10**10
     min_pos = -1
     for i in range(min(positions), max(positions) + 1):
         cost = sum([cost_p2(x - i) for x in positions])
@@ -30,9 +32,9 @@ def part2(data):
     return min_pos, min_cost
 
 
-test_input = ['16,1,2,0,4,2,7,1,2,14']
+test_input = ["16,1,2,0,4,2,7,1,2,14"]
 
-input_raw = read_file('2021/data/day07/input.txt')
+input_raw = read_file("2021/data/day07/input.txt")
 
 assert part1(test_input)[0] == 2
 

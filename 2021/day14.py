@@ -9,8 +9,7 @@ def read_file(filename):
 
 def parse_input(data: List[str]):
     start = data[0]
-    insert_map = {key: value for key, value in map(
-        lambda x: x.split(' -> '), data[2:])}
+    insert_map = {key: value for key, value in map(lambda x: x.split(" -> "), data[2:])}
     return start, insert_map
 
 
@@ -41,20 +40,20 @@ def reduce_first_letter(d: Count_Dict) -> Count_Dict:
     return result
 
 
-
-def do_puzzle(data: List[str], n = 10) -> int:
+def do_puzzle(data: List[str], n=10) -> int:
     start, insert_map = parse_input(data)
-    pairs = [start[i:i+2] for i in range(len(start))]
+    pairs = [start[i : i + 2] for i in range(len(start))]
     counts = Counter(pairs)
-    pair_map = {key: [key[0] + value, value + key[1]]
-                for key, value in insert_map.items()}
+    pair_map = {
+        key: [key[0] + value, value + key[1]] for key, value in insert_map.items()
+    }
     after = multi_step(counts, pair_map, n)
     first_letter = reduce_first_letter(after)
     return max(first_letter.values()) - min(first_letter.values())
 
+
 def part1(data: List[str]) -> int:
     return do_puzzle(data, 10)
-    
 
 
 def part2(data: List[str]) -> int:
@@ -62,24 +61,24 @@ def part2(data: List[str]) -> int:
 
 
 test_input = [
-    'NNCB',
-    '',
-    'CH -> B',
-    'HH -> N',
-    'CB -> H',
-    'NH -> C',
-    'HB -> C',
-    'HC -> B',
-    'HN -> C',
-    'NN -> C',
-    'BH -> H',
-    'NC -> B',
-    'NB -> B',
-    'BN -> B',
-    'BB -> N',
-    'BC -> B',
-    'CC -> N',
-    'CN -> C',
+    "NNCB",
+    "",
+    "CH -> B",
+    "HH -> N",
+    "CB -> H",
+    "NH -> C",
+    "HB -> C",
+    "HC -> B",
+    "HN -> C",
+    "NN -> C",
+    "BH -> H",
+    "NC -> B",
+    "NB -> B",
+    "BN -> B",
+    "BB -> N",
+    "BC -> B",
+    "CC -> N",
+    "CN -> C",
 ]
 
 
@@ -87,7 +86,7 @@ DAY = 14
 TEST_SOLUTION_1 = 1588
 TEST_SOLUTION_2 = 2188189693529
 
-input_raw = read_file(f'2021/data/day{DAY:02d}/input.txt')
+input_raw = read_file(f"2021/data/day{DAY:02d}/input.txt")
 
 if TEST_SOLUTION_1:
     assert part1(test_input) == TEST_SOLUTION_1

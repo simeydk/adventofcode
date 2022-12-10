@@ -6,11 +6,13 @@ from collections import Counter
 @dataclass(frozen=True)
 class Node:
     value: str
-    connections: Set['Node'] = field(
-        default_factory=set, hash=False, repr=False, compare=False)
+    connections: Set["Node"] = field(
+        default_factory=set, hash=False, repr=False, compare=False
+    )
 
     def __repr__(self) -> str:
-        return f'{self.value}'
+        return f"{self.value}"
+
 
 @dataclass(frozen=True)
 class Graph:
@@ -44,7 +46,7 @@ def paths_between(start: Node, end: Node, visited: Set[Node] = None) -> List[Lis
         visited = visited.union({start})
     for node in start.connections.difference(visited):
         for path in paths_between(node, end, visited):
-            yield([start] + path)
+            yield ([start] + path)
 
 
 def part1(data: List[str]):
@@ -54,24 +56,30 @@ def part1(data: List[str]):
     return len(list(paths_between(start_node, end_node)))
 
 
-def paths_between_with_small_cave(start: Node, end: Node, prefix: List[Node] = []) -> List[List[str]]:
+def paths_between_with_small_cave(
+    start: Node, end: Node, prefix: List[Node] = []
+) -> List[List[str]]:
     prefix = prefix + [start]
     if start == end:
         yield prefix
         return
-        
+
     max_prev_lower = get_max_prev_lower(prefix)
 
     for node in start.connections:
-        if (node.value == "start"): continue
-        if node.value.islower() and node in prefix and max_prev_lower >= 2: continue
-         
+        if node.value == "start":
+            continue
+        if node.value.islower() and node in prefix and max_prev_lower >= 2:
+            continue
+
         yield from paths_between_with_small_cave(node, end, prefix)
+
 
 def get_max_prev_lower(prefix):
     prev_lowers = Counter(node for node in prefix if node.value.islower())
     max_prev_lower = max(prev_lowers.values())
     return max_prev_lower
+
 
 def part2(data: List[str]) -> int:
     return len(part2_paths(data))
@@ -86,20 +94,20 @@ def part2_paths(data: List[str]) -> List[List[Node]]:
 
 
 test_input = [
-    'start-A',
-    'start-b',
-    'A-c',
-    'A-b',
-    'b-d',
-    'A-end',
-    'b-end',
+    "start-A",
+    "start-b",
+    "A-c",
+    "A-b",
+    "b-d",
+    "A-end",
+    "b-end",
 ]
 
 DAY = 12
 TEST_SOLUTION_1 = 10
 TEST_SOLUTION_2 = 36
 
-input_raw = read_file(f'2021/data/day{DAY:02d}/input.txt')
+input_raw = read_file(f"2021/data/day{DAY:02d}/input.txt")
 
 if TEST_SOLUTION_1:
     assert part1(test_input) == TEST_SOLUTION_1

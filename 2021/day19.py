@@ -10,19 +10,22 @@ DAY = 19
 TEST_SOLUTION_1 = 79
 TEST_SOLUTION_2 = 3621
 
+
 def read_file(filename) -> str:
     with open(filename, encoding="UTF-8") as f:
         return f.read()
 
 
-def parse_scanner(string: str) -> 'Scanner':
+def parse_scanner(string: str) -> "Scanner":
     header_raw, *lines = string.splitlines()
-    l = [map(int, line.split(',')) for line in lines]
+    l = [map(int, line.split(",")) for line in lines]
     return {Coords(*line) for line in l}
 
-def parse_input(data: str) -> List[List['Coords']]:
-    scanners_raw = data.split('\n\n')
+
+def parse_input(data: str) -> List[List["Coords"]]:
+    scanners_raw = data.split("\n\n")
     return [parse_scanner(s) for s in scanners_raw]
+
 
 class Coords(NamedTuple):
     x: int = 0
@@ -41,52 +44,81 @@ class Coords(NamedTuple):
     def __repr__(self):
         return f"C({self.x}, {self.y}, {self.z})"
 
-    def rotate(self, n) -> 'Coords':
+    def rotate(self, n) -> "Coords":
         x, y, z = self
-        if n == 0: return Coords(x, y, z)
-        if n == 1: return Coords(x, -z, y)
-        if n == 2: return Coords(x, -y, -z)
-        if n == 3: return Coords(x, z, -y)
-        if n == 4: return Coords(-x, -y, z)
-        if n == 5: return Coords(-x, -z, -y)
-        if n == 6: return Coords(-x, y, -z)
-        if n == 7: return Coords(-x, z, y)
-        if n == 8: return Coords(y, x, -z)
-        if n == 9: return Coords(y, -x, z)
-        if n == 10: return Coords(y, z, x)
-        if n == 11: return Coords(y, -z, -x)
-        if n == 12: return Coords(-y, x, z)
-        if n == 13: return Coords(-y, -x, -z)
-        if n == 14: return Coords(-y, -z, x)
-        if n == 15: return Coords(-y, z, -x)
-        if n == 16: return Coords(z, x, y)
-        if n == 17: return Coords(z, -x, -y)
-        if n == 18: return Coords(z, -y, x)
-        if n == 19: return Coords(z, y, -x)
-        if n == 20: return Coords(-z, x, -y)
-        if n == 21: return Coords(-z, -x, y)
-        if n == 22: return Coords(-z, y, x)
-        if n == 23: return Coords(-z, -y, -x)
+        if n == 0:
+            return Coords(x, y, z)
+        if n == 1:
+            return Coords(x, -z, y)
+        if n == 2:
+            return Coords(x, -y, -z)
+        if n == 3:
+            return Coords(x, z, -y)
+        if n == 4:
+            return Coords(-x, -y, z)
+        if n == 5:
+            return Coords(-x, -z, -y)
+        if n == 6:
+            return Coords(-x, y, -z)
+        if n == 7:
+            return Coords(-x, z, y)
+        if n == 8:
+            return Coords(y, x, -z)
+        if n == 9:
+            return Coords(y, -x, z)
+        if n == 10:
+            return Coords(y, z, x)
+        if n == 11:
+            return Coords(y, -z, -x)
+        if n == 12:
+            return Coords(-y, x, z)
+        if n == 13:
+            return Coords(-y, -x, -z)
+        if n == 14:
+            return Coords(-y, -z, x)
+        if n == 15:
+            return Coords(-y, z, -x)
+        if n == 16:
+            return Coords(z, x, y)
+        if n == 17:
+            return Coords(z, -x, -y)
+        if n == 18:
+            return Coords(z, -y, x)
+        if n == 19:
+            return Coords(z, y, -x)
+        if n == 20:
+            return Coords(-z, x, -y)
+        if n == 21:
+            return Coords(-z, -x, y)
+        if n == 22:
+            return Coords(-z, y, x)
+        if n == 23:
+            return Coords(-z, -y, -x)
 
     def manhattan(self, other) -> int:
         return abs(self.x - other.x) + abs(self.y - other.y) + abs(self.z - other.z)
 
+
 Scanner = Set[Coords]
+
 
 def find_transform(scanner: Scanner, ocean: Scanner) -> Tuple[Coords, int]:
     for rotation in range(24):
-        offsets = [point.rotate(rotation) - beacon for beacon, point  in product(ocean, scanner)]
+        offsets = [
+            point.rotate(rotation) - beacon for beacon, point in product(ocean, scanner)
+        ]
         counts = Counter(offsets)
         best_offset, best_count = counts.most_common(1)[0]
         if best_count >= 12:
             return -best_offset, rotation
     return None, None
 
+
 def solve_scanners(scanners: List[Scanner]) -> Tuple[Scanner, List[Scanner]]:
     queue: List[Scanner] = [*scanners]
     scanner_positions: List[Coords] = []
     scanner = queue.pop(0)
-    scanner_positions.append(Coords(0,0,0))
+    scanner_positions.append(Coords(0, 0, 0))
     ocean: Scanner = {*scanner}
     while queue:
         scanner = queue.pop(0)
@@ -107,18 +139,19 @@ def solve_string(data: str) -> Tuple[Scanner, List[Coords]]:
     scanners = parse_input(data)
     return solve_scanners(scanners)
 
+
 def part1(data: str) -> int:
-    ocean, scanners = solve_string(data) 
+    ocean, scanners = solve_string(data)
     return len(ocean)
+
 
 def part2(data: str) -> int:
     ocean, scanners = solve_string(data)
     return max(a.manhattan(b) for a, b in combinations(scanners, 2))
 
 
-
-test_input = read_file(f'2021/data/day{DAY:02d}/test_input.txt')
-input_raw = read_file(f'2021/data/day{DAY:02d}/input.txt')
+test_input = read_file(f"2021/data/day{DAY:02d}/test_input.txt")
+input_raw = read_file(f"2021/data/day{DAY:02d}/input.txt")
 
 if __name__ == "__main__":
 

@@ -10,9 +10,11 @@ DAY = 18
 TEST_SOLUTION_1 = 4140
 TEST_SOLUTION_2 = 3993
 
+
 def read_file(filename) -> str:
     with open(filename, encoding="UTF-8") as f:
         return f.read()
+
 
 @dataclass
 class Number:
@@ -28,19 +30,24 @@ class Number:
     def __eq__(self, __o: object) -> bool:
         return self is __o
 
-Element = Union['Pair_List', Number]
+
+Element = Union["Pair_List", Number]
 Pair_List = List[Element]
+
 
 def parse_list(l: list) -> Pair_List:
     items = [Number(x) if type(x) == int else parse_list(x) for x in l]
     return items
 
+
 def parse_input(data: str) -> Pair_List:
     return [parse_list(json.loads(line)) for line in data]
 
+
 def split_number(number: Number):
-    x = number.value /2
+    x = number.value / 2
     return [Number(math.floor(x)), Number(math.ceil(x))]
+
 
 def split(pair_list: Pair_List) -> True:
     for i, element in enumerate(pair_list):
@@ -51,7 +58,8 @@ def split(pair_list: Pair_List) -> True:
         else:
             if split(element) == True:
                 return True
-    return False 
+    return False
+
 
 def numbers_list(pair_list: Pair_List) -> Iterable[Number]:
     for element in pair_list:
@@ -62,15 +70,20 @@ def numbers_list(pair_list: Pair_List) -> Iterable[Number]:
         else:
             raise Exception(f"Unknown type: {str(type(element))}")
 
+
 def is_simple_pair(pair_list: Pair_List) -> bool:
     return all(type(element) == Number for element in pair_list)
 
-def simple_pairs(pair_list: Pair_List, depth: int = 1, parent = None) -> Iterable[Tuple[Pair_List, int]]:
+
+def simple_pairs(
+    pair_list: Pair_List, depth: int = 1, parent=None
+) -> Iterable[Tuple[Pair_List, int]]:
     if is_simple_pair(pair_list):
         yield pair_list, depth, parent
     else:
         for element in (element for element in pair_list if type(element) == list):
-             yield from simple_pairs(element, depth + 1, pair_list)
+            yield from simple_pairs(element, depth + 1, pair_list)
+
 
 def explode(pair_list: Pair_List, depth: int = 1) -> bool:
     numbers = list(numbers_list(pair_list))
@@ -90,6 +103,7 @@ def explode(pair_list: Pair_List, depth: int = 1) -> bool:
             return True
     return False
 
+
 def step(pair_list: Pair_List):
     if explode(pair_list):
         return True
@@ -98,10 +112,12 @@ def step(pair_list: Pair_List):
     else:
         return False
 
+
 def reduce(pair_list: Pair_List):
     while step(pair_list):
         pass
     return pair_list
+
 
 def add(*pair_lists: List[Pair_List]) -> Pair_List:
     first, *rest = pair_lists
@@ -110,11 +126,12 @@ def add(*pair_lists: List[Pair_List]) -> Pair_List:
         result = [result, item]
     return result
 
+
 def magnitude(element: Element) -> int:
     if type(element) == Number:
         return element.value
     else:
-    # elif type(element) == List:
+        # elif type(element) == List:
         x, y, *rest = element
         return magnitude(x) * 3 + magnitude(y) * 2
     # else:
@@ -122,7 +139,7 @@ def magnitude(element: Element) -> int:
 
 
 def add_reduce_mag(a: Pair_List, b: Pair_List):
-    return magnitude(reduce(add(a,b)))
+    return magnitude(reduce(add(a, b)))
 
 
 def part1(data: str) -> int:
@@ -134,25 +151,41 @@ def part1(data: str) -> int:
     mag = magnitude(result)
     return mag
 
-print(reduce(add(
-    parse_list([[2,[[7,7],7]],[[5,8],[[9,3],[0,2]]]]), 
-    parse_list([[[0,[5,8]],[[1,7],[9,6]]],[[4,[1,2]],[[1,4],2]]]))))
-print(magnitude(parse_list([[[[7,8],[6,6]],[[6,0],[7,7]]],[[[7,8],[8,8]],[[7,9],[0,6]]]])))
+
+print(
+    reduce(
+        add(
+            parse_list([[2, [[7, 7], 7]], [[5, 8], [[9, 3], [0, 2]]]]),
+            parse_list([[[0, [5, 8]], [[1, 7], [9, 6]]], [[4, [1, 2]], [[1, 4], 2]]]),
+        )
+    )
+)
+print(
+    magnitude(
+        parse_list(
+            [[[[7, 8], [6, 6]], [[6, 0], [7, 7]]], [[[7, 8], [8, 8]], [[7, 9], [0, 6]]]]
+        )
+    )
+)
+
 
 def both_ways(pair):
     a, b = pair
-    yield a,b
-    yield b,a
+    yield a, b
+    yield b, a
+
 
 def part2(data: str) -> int:
     strings = data.splitlines()
     the_max = 0
     for first, second in combinations(strings, 2):
-        the_max = max(the_max,
-            part1('\n'.join([first, second])),
-            part1('\n'.join([second, first]))
+        the_max = max(
+            the_max,
+            part1("\n".join([first, second])),
+            part1("\n".join([second, first])),
         )
     return the_max
+
 
 test_input = """[[[0,[5,8]],[[1,7],[9,6]]],[[4,[1,2]],[[1,4],2]]]
 [[[5,[2,8]],4],[5,[[9,9],0]]]
@@ -166,7 +199,7 @@ test_input = """[[[0,[5,8]],[[1,7],[9,6]]],[[4,[1,2]],[[1,4],2]]]
 [[[[5,2],5],[8,[3,7]]],[[5,[7,5]],[4,4]]]"""
 
 
-input_raw = read_file(f'2021/data/day{DAY:02d}/input.txt')
+input_raw = read_file(f"2021/data/day{DAY:02d}/input.txt")
 
 if TEST_SOLUTION_1:
     assert part1(test_input) == TEST_SOLUTION_1
@@ -178,4 +211,3 @@ if TEST_SOLUTION_1:
         print(f"Test 2:\n{part2(test_input)}")
 else:
     print(f"Test 1:\n{part1(test_input)}")
-    

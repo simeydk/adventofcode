@@ -12,17 +12,24 @@ def read_file(filename) -> str:
     with open(filename, encoding="UTF-8") as f:
         return f.read()
 
-def parse_line(line: str) -> Tuple[bool, Tuple[int, int], Tuple[int, int], Tuple[int, int]]:
-    result = re.findall(r'(\w+) x=(-?\d+)..(-?\d+),y=(-?\d+)..(-?\d+),z=(-?\d+)..(-?\d+)', line)[0]
-    on = result[0] == 'on'
+
+def parse_line(
+    line: str,
+) -> Tuple[bool, Tuple[int, int], Tuple[int, int], Tuple[int, int]]:
+    result = re.findall(
+        r"(\w+) x=(-?\d+)..(-?\d+),y=(-?\d+)..(-?\d+),z=(-?\d+)..(-?\d+)", line
+    )[0]
+    on = result[0] == "on"
     x_min, x_max, y_min, y_max, z_min, z_max = [int(x) for x in result[1:]]
     x_max = x_max + 1
     y_max = y_max + 1
     z_max = z_max + 1
-    return on,(x_min, x_max), (y_min, y_max), (z_min, z_max)
- 
+    return on, (x_min, x_max), (y_min, y_max), (z_min, z_max)
+
+
 def parse_input(data: str):
     return [parse_line(line) for line in data.splitlines()]
+
 
 @dataclass(frozen=True)
 class Side:
@@ -37,15 +44,19 @@ class Side:
     def size(self) -> int:
         return self.end - self.start
 
-    def split(self, splits: Union[int, Iterable[int]]) -> List['Side']:
-        if isinstance(splits, int): splits = [splits]
+    def split(self, splits: Union[int, Iterable[int]]) -> List["Side"]:
+        if isinstance(splits, int):
+            splits = [splits]
         splits = list(splits)
         splits.sort()
         splits = [0] + splits + [self.size]
-        splits = [self.start + (end - start) // 2 for start, end in zip(splits[:-1], splits[1:])]
+        splits = [
+            self.start + (end - start) // 2
+            for start, end in zip(splits[:-1], splits[1:])
+        ]
         return [Side(start, end) for start, end in zip(splits[:-1], splits[1:])]
 
-    def intersect(self, other: 'Side') -> Union['Side', None]:
+    def intersect(self, other: "Side") -> Union["Side", None]:
         start = max(self.start, other.start)
         end = min(self.end, other.end)
         if start < end:
@@ -54,7 +65,7 @@ class Side:
             return None
 
     @classmethod
-    def create(cls, *args) -> 'Side':
+    def create(cls, *args) -> "Side":
         if len(args) == 1:
             arg = args[0]
             if type(arg) == Side:
@@ -65,7 +76,8 @@ class Side:
                 return cls(*arg)
         if len(args) == 2:
             return cls(*args)
-        else: raise ValueError(f"Invalid args: {args}")
+        else:
+            raise ValueError(f"Invalid args: {args}")
 
     def __str__(self):
         return f"({self.start}, {self.end})"
@@ -74,8 +86,7 @@ class Side:
         return str(self)
 
 
-
-assert Side(0,5) == Side.create(5) == Side.create(0,5) == Side.create(Side(0,5))
+assert Side(0, 5) == Side.create(5) == Side.create(0, 5) == Side.create(Side(0, 5))
 
 
 @dataclass(frozen=True)
@@ -86,31 +97,35 @@ class Block:
 
     def __post_init__(self):
         if self.size < 0:
-            raise ValueError(f"Size is negative: {self.size} = {self.x.size} * {self.y.size} * {self.z.size}")
+            raise ValueError(
+                f"Size is negative: {self.size} = {self.x.size} * {self.y.size} * {self.z.size}"
+            )
 
     @property
     def size(self) -> int:
         return self.x.size * self.y.size * self.z.size
 
-    def split(self, splits: Union[int, Iterable[int]]) -> List['Block']:
+    def split(self, splits: Union[int, Iterable[int]]) -> List["Block"]:
         x_sides = self.x.split(splits)
         y_sides = self.y.split(splits)
         z_sides = self.z.split(splits)
         return [Block(x, y, z) for x, y, z in zip(x_sides, y_sides, z_sides)]
 
-    def intersect(self, other: 'Block') -> Union['Block', None]:
+    def intersect(self, other: "Block") -> Union["Block", None]:
         x_intersect = self.x.intersect(other.x)
         y_intersect = self.y.intersect(other.y)
         z_intersect = self.z.intersect(other.z)
         if x_intersect and y_intersect and z_intersect:
             intersect = Block(x_intersect, y_intersect, z_intersect)
             if intersect.size > self.size or intersect.size > other.size:
-                raise ValueError(f"Intersect is bigger than either: {intersect.size} > {self.size} or {intersect.size} > {other.size}")
+                raise ValueError(
+                    f"Intersect is bigger than either: {intersect.size} > {self.size} or {intersect.size} > {other.size}"
+                )
             return Block(x_intersect, y_intersect, z_intersect)
         else:
             return None
 
-    def intersect_multi(self, others: Iterable['Block']) -> List['Block']:
+    def intersect_multi(self, others: Iterable["Block"]) -> List["Block"]:
         intersects = (self.intersect(block) for block in others)
         return [x for x in intersects if x]
 
@@ -131,7 +146,7 @@ class Block:
             raise Exception(f"Invalid args for Block.create: {args}")
 
     @classmethod
-    def overlaps(cls, blocks: List[Tuple[bool, 'Block']]) -> int:
+    def overlaps(cls, blocks: List[Tuple[bool, "Block"]]) -> int:
         positives: List[Block] = []
         negatives: List[Block] = []
         for on, block in blocks:
@@ -139,46 +154,63 @@ class Block:
             neg_interesctions = block.intersect_multi(negatives)
             negatives.extend(pos_interesctions)
             negatives.extend(neg_interesctions)
-            if on: positives.append(block)
+            if on:
+                positives.append(block)
 
-        return sum(block.size for block in positives) - sum(block.size for block in negatives)
+        return sum(block.size for block in positives) - sum(
+            block.size for block in negatives
+        )
 
-def combined_size(blocks: List[Tuple[bool, Block]], bounding_block: Optional[Block] = None) -> int:
+
+def combined_size(
+    blocks: List[Tuple[bool, Block]], bounding_block: Optional[Block] = None
+) -> int:
 
     positives: List[Block] = []
     negatives: List[Block] = []
     for on, block in blocks:
         if bounding_block:
             block = block.intersect(bounding_block)
-            if not block: continue
+            if not block:
+                continue
         pos_interesctions = block.intersect_multi(positives)
         neg_interesctions = block.intersect_multi(negatives)
         negatives.extend(pos_interesctions)
         positives.extend(neg_interesctions)
-        if on: positives.append(block)
+        if on:
+            positives.append(block)
 
-    return sum(block.size for block in positives) - sum(block.size for block in negatives)
+    return sum(block.size for block in positives) - sum(
+        block.size for block in negatives
+    )
+
 
 B = Block.create
-a, b = Side(0, 6), Side(4,10)
+a, b = Side(0, 6), Side(4, 10)
 
-aa, ab, ba, bb = B(a,a,1), B(a,b,1), B(b,a,1), B(b,b,1)
+aa, ab, ba, bb = B(a, a, 1), B(a, b, 1), B(b, a, 1), B(b, b, 1)
 
 assert combined_size([(True, aa)]) == 36
 assert combined_size([(True, aa), (True, ab)]) == 60
 assert combined_size([(True, aa), (True, ab), (True, ba)]) == 84
 
-print(combined_size([
-    (True, aa),
-    (True, ab),
-    (True, ba),
-    (True, bb),
-    ]))
+print(
+    combined_size(
+        [
+            (True, aa),
+            (True, ab),
+            (True, ba),
+            (True, bb),
+        ]
+    )
+)
+
 
 def part1(data: str) -> int:
     instructions = parse_input(data)
     blocks = [(on, Block.create(x, y, z)) for on, x, y, z in instructions]
-    return combined_size(blocks, Block.create((-50,51))) 
+    return combined_size(blocks, Block.create((-50, 51)))
+
 
 def part2(data: str) -> int:
     instructions = parse_input(data)
@@ -277,7 +309,7 @@ off x=-93533..-4276,y=-16170..68771,z=-104985..-24507"""
 
 # assert part1(test_input_2) == 474140
 
-input_raw = read_file(f'2021/data/day{DAY:02d}/input.txt')
+input_raw = read_file(f"2021/data/day{DAY:02d}/input.txt")
 
 if TEST_SOLUTION_1:
     assert part1(test_input) == TEST_SOLUTION_1
@@ -289,4 +321,3 @@ if TEST_SOLUTION_1:
         print(f"Test 2:\n{part2(test_input_2)}")
 else:
     print(f"Test 1:\n{part1(test_input)}")
-    

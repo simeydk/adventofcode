@@ -1,10 +1,12 @@
 from typing import List
 
+
 def read_file_to_one_big_string(filename):
     with open(filename) as f:
         return f.read()
 
-input_raw = read_file_to_one_big_string('2022/data/day08/input.txt')
+
+input_raw = read_file_to_one_big_string("2022/data/day08/input.txt")
 
 test_input = """
 30373
@@ -17,11 +19,13 @@ test_input = """
 part1_test_solution = 21
 part2_test_solution = 8
 
+
 def parse_input(input_raw: str) -> list[list[int]]:
     lines = input_raw.splitlines()
     return [[int(x) for x in line] for line in lines]
 
-def is_visible(i,j, grid):
+
+def is_visible(i, j, grid):
     value = grid[i][j]
     up, down, left, right = True, True, True, True
     for di in range(len(grid)):
@@ -41,8 +45,9 @@ def is_visible(i,j, grid):
                 left = False
             if dj > j:
                 # print('right', (i,j), value, (i, dj), dvalue)
-                right = False 
+                right = False
     return up or down or left or right
+
 
 def part1(input_raw: str):
     grid = parse_input(input_raw)
@@ -53,30 +58,32 @@ def part1(input_raw: str):
             num_visible += visible
     return num_visible
 
-def scenic_score(i,j, grid):
+
+def scenic_score(i, j, grid):
     value = grid[i][j]
     up, down, left, right = 0, 0, 0, 0
-    for di in range(i-1, -1, -1):
+    for di in range(i - 1, -1, -1):
         up += 1
         dvalue = grid[di][j]
         if dvalue >= value:
             break
-    for di in range(i+1, len(grid), 1):
+    for di in range(i + 1, len(grid), 1):
         down += 1
         dvalue = grid[di][j]
         if dvalue >= value:
             break
-    for dj in range(j-1, -1, -1):
+    for dj in range(j - 1, -1, -1):
         left += 1
         dvalue = grid[i][dj]
         if dvalue >= value:
             break
-    for dj in range(j+1, len(grid), 1):
+    for dj in range(j + 1, len(grid), 1):
         right += 1
         dvalue = grid[i][dj]
         if dvalue >= value:
-            break 
+            break
     return up * down * left * right
+
 
 def part2(input_raw: str):
     grid = parse_input(input_raw)
@@ -84,7 +91,7 @@ def part2(input_raw: str):
     # print(scenic_score(3,2,grid))
     for i in range(len(grid)):
         for j in range(len(grid[0])):
-            best = max(best, scenic_score(i,j,grid))
+            best = max(best, scenic_score(i, j, grid))
     return best
 
 
@@ -101,7 +108,3 @@ if part2_test_solution is None:
 
 assert part2(test_input) == part2_test_solution
 print(f"Part 2: {part2(input_raw)}")
-
-
-
-
