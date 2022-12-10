@@ -1,22 +1,25 @@
-from typing import List
 
 def read_file_to_one_big_string(filename):
     with open(filename) as f:
         return f.read()
 
-input_raw = read_file_to_one_big_string('2022/data/day03/input.txt')
-
-test_input = """
-""".strip()
-
+day_number = 6
 part1_test_solution = None
 part2_test_solution = None
+test_input = """
+""".strip('\n')
+
+
+input_raw = read_file_to_one_big_string(f'2022/data/day{day_number:02d}/input.txt')
+
+
 
 def part1(input_raw: str):
     return 0
 
 def part2(input_raw: str):
     return 0
+
 
 
 if part1_test_solution is None:

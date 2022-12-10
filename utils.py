@@ -25,6 +25,6 @@ def get_example_input_from_html(html_text):
     if len(pres) == 1:
         return pres[0].get_text()
     elif len(pres) > 1:
-        return 'MULTIPLE PRE TAGS FOUND'
+        return 'MULTIPLE PRE TAGS FOUND' + '\n\n' + '\n\n'.join(pre.get_text() for pre in pres)
     else: 
         return ''
