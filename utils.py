@@ -21,7 +21,7 @@ def write_string_to_file(filename, string):
     ''' Writes a string to a text file, will also create parent folders if they don't exist '''
     path = Path(filename)
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.write(string)
 
 
