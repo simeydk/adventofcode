@@ -31,10 +31,12 @@ def part1(input_raw: str):
 
 
 def part2(input_raw: str):
-    tmp = re.sub(r"don't()", "\nSKIP >> ", input_raw)
+    print(input_raw)
+    tmp = re.sub(r"don't()", "\nSKIP >> ", input_raw.replace('\n', ' '), flags=re.DOTALL)
     lines = re.sub(r"do()", '\nDO >> ', tmp).splitlines()
     filtered = [line for line in lines if not line.startswith("SKIP")]
-    joined = ''.join(filtered)
+    joined = '\n'.join(filtered)
+    print(joined)
     return part1(joined)
     
 
