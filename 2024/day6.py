@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from functools import cmp_to_key
 import re
 from collections import Counter
@@ -10,7 +11,7 @@ def read_file_to_one_big_string(filename):
 year=2024
 day_number = 6
 part1_test_solution = 41
-part2_test_solution = None
+part2_test_solution = 6
 test_input = """
 """.strip(
     "\n"
@@ -64,26 +65,49 @@ def process_puzzle(player, things, w, h):
         i = (i + 1) % len(DIRECTIONS)
         return DIRECTIONS[i]
 
-    tracks: Set[Tuple[Vec, Vec]] = set()
+    tracks: Set[Vec] = set()
+    seen: Set[Tuple[Vec, Vec]] = set() 
     while in_bounds(position):
+        if (direction, position) in seen:
+            return set()
+        if len(seen) > w * h:
+            return set()
+
         tracks.add(position)
+        seen.add((direction, position))
         candidate_pos = (position[0] + direction[0], position[1] + direction[1])
         if candidate_pos in things:
             direction = turn(direction)
         else:
             position = candidate_pos
-    return len(tracks)
+    return tracks
 
 def part1(input_raw: str):
     player, things, w, h = parse_input(input_raw)
-    return process_puzzle(player, things, w, h)
+    return len(process_puzzle(player, things, w, h))
+
+
+def threaded_map(map_fn, iter):
+    with ThreadPoolExecutor() as tpe:
+        return list(tpe.map(map_fn, iter))    
+    
 
 
 def part2(input_raw: str):
-    rules, updates = parse_input(input_raw)
-    unordered = [u for u in updates if process_update(u, rules) == 0]
-    ordered = [order_update(u, rules) for u in unordered]
-    return sum(process_update(update, rules) for update in ordered)
+    player, things, w, h = parse_input(input_raw)
+    loops = 0
+    original_tracks = process_puzzle(player, things, w, h)
+    candidates = original_tracks
+    
+    results = threaded_map(lambda c: test_candidate(player, things, w, h, c), candidates)
+    return len([x for x in results if x == 0])
+    
+
+def test_candidate(player, things, w, h, candidate):
+    new_things = things.copy()
+    new_things.add(candidate)
+    result = process_puzzle(player, new_things, w, h)
+    return len(result)
 
 
 if part1_test_solution is None:
