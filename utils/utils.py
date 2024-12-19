@@ -3,6 +3,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 import requests
 from bs4 import BeautifulSoup
+import re
 
 AOC_TZ = ZoneInfo("US/Eastern")
 
@@ -60,3 +61,18 @@ def extract_test_input(puzzle_html_filename, test_input_filename):
             write_string_to_file(test_input_filename, example_input)
         else:
             print(f"Could not find <pre> tag in puzzle HTML file:\n{puzzle_html_filename}")
+
+
+
+def parse_puzzle_code(code: str) -> tuple[int, int]:
+    # get current date as per US/Eastern, which is what AOC is configured on
+    today = AOC_now()
+    match re.split(r"[\/\-\.]", code):
+        case [""]:
+            return today.year, today.day
+        case [day]:
+            return today.year, int(day)
+        case [year, day]:
+            return int(year), int(day)
+        case something_else:
+            raise ValueError(f'Could not parse code "{code}"')
