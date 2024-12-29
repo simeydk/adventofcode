@@ -1,5 +1,5 @@
 
-from typing import Callable, Iterable, List, Optional, TypeVar, Union
+from typing import Callable, Generator, Iterable, List, Optional, Tuple, TypeVar, Union
 
 
 T = TypeVar('T')
@@ -42,6 +42,11 @@ def nested_foreach(fn: Callable[[U, int, int], T], grid: List[List[U]]):
         for i_col, value in enumerate(row):
             fn(value, i_row, i_col)
 
+def nested_items(grid: List[List[T]]) -> Generator[Tuple[int, int, T], None, None]:
+    for i_row, row in enumerate(grid):
+        for i_col, value in enumerate(row):
+            yield i_row, i_col, value
+    
 
 def create_grid(nrows, ncols, filler: Union[Callable[[int, int], T], T] = None):
     return [
@@ -50,5 +55,3 @@ def create_grid(nrows, ncols, filler: Union[Callable[[int, int], T], T] = None):
         ]
         for row_i in range(nrows)
     ]
-
-
